@@ -93,6 +93,20 @@ def _inject_css() -> None:
             font-weight: 700;
             color: #0B3D2E;
         }
+
+        .name-chip-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.4rem;
+            margin: 0.3rem 0 0.9rem 0;
+        }
+        .name-chip {
+            padding: 0.25rem 0.7rem;
+            border-radius: 999px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            word-break: break-word;
+        }
         </style>
         """,
         unsafe_allow_html=True,
@@ -116,6 +130,25 @@ def banner(icon: str, subtitle: str | None = None) -> None:
         """,
         unsafe_allow_html=True,
     )
+
+
+def render_name_chips(names, tone: str = "neutral") -> None:
+    """Render a wrapped row of small pill chips for a list of player names."""
+    if not names:
+        st.caption("No one.")
+        return
+
+    palette = {
+        "correct": ("#E4F7EE", "#0B3D2E"),
+        "incorrect": ("#FDEBEC", "#7A1F27"),
+        "neutral": ("#F4F7F6", "#263a34"),
+    }
+    bg, fg = palette.get(tone, palette["neutral"])
+    chips = "".join(
+        f'<span class="name-chip" style="background:{bg};color:{fg};">{html.escape(str(n))}</span>'
+        for n in names
+    )
+    st.markdown(f'<div class="name-chip-row">{chips}</div>', unsafe_allow_html=True)
 
 
 def render_leaderboard(board, limit: int | None = None) -> None:
