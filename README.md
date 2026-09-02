@@ -1,6 +1,6 @@
-# Live Knowledge Check
+# ZEVO Knowledge Check
 
-A live, group quiz app for coworking sessions, similar to Kahoot. One person
+A live, group quiz app for ZEVO coworking sessions, similar to Kahoot. One person
 hosts, everyone else joins with a 4-letter code on their own device, and
 answers sync live with a shared leaderboard.
 
