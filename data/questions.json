@@ -1,0 +1,46 @@
+[
+  {
+    "question": "Replace this file's contents with your own knowledge-check questions. What format does each question need?",
+    "options": [
+      "question, options, correct_index, duration",
+      "prompt, answers, key",
+      "text only, no structure needed",
+      "It doesn't matter, any format works"
+    ],
+    "correct_index": 0,
+    "duration": 20
+  },
+  {
+    "question": "How many answer options can a question have?",
+    "options": [
+      "Exactly 2",
+      "Exactly 4",
+      "2 to 6, your choice",
+      "Unlimited"
+    ],
+    "correct_index": 2,
+    "duration": 20
+  },
+  {
+    "question": "What happens to your score if you answer correctly but slowly?",
+    "options": [
+      "You get 0 points regardless",
+      "You get full points no matter what",
+      "You get fewer points than a fast correct answer, but more than 0",
+      "You get a time penalty subtracted from your total"
+    ],
+    "correct_index": 2,
+    "duration": 20
+  },
+  {
+    "question": "This is a placeholder quiz. Where should real questions go before your session?",
+    "options": [
+      "Nowhere, keep these",
+      "In data/questions.json, following the same structure",
+      "Directly typed into the Streamlit app each time",
+      "In the README"
+    ],
+    "correct_index": 1,
+    "duration": 20
+  }
+]
