@@ -2,7 +2,7 @@ import streamlit as st
 from streamlit_autorefresh import st_autorefresh
 
 from game_engine.state import get_store, LOBBY, QUESTION, REVEAL, FINISHED
-from theme import page, banner, render_leaderboard
+from theme import page, banner, render_leaderboard, render_category_badge
 
 page("Play", "🎮")
 banner("🎮", "Player screen — join with your host's code")
@@ -43,6 +43,34 @@ st.caption(f"Playing as **{name}** in game `{code}`")
 # ------------------------------------------------------------------- LOBBY
 if game.phase == LOBBY:
     st_autorefresh(interval=1000, key="player_lobby_refresh")
+
+    if game.category_pending:
+        st.subheader("🗳️ Pick a category")
+        options = store.pending_categories(code)
+        my_vote = game.category_votes.get(name)
+
+        if options:
+            cols = st.columns(len(options))
+            for col, (cat_key, label, icon) in zip(cols, options):
+                is_mine = cat_key == my_vote
+                btn_label = f"{icon} {label}" + (" ✓" if is_mine else "")
+                if col.button(
+                    btn_label,
+                    key=f"vote_{cat_key}",
+                    use_container_width=True,
+                    type="primary" if is_mine else "secondary",
+                ):
+                    store.vote_category(code, name, cat_key)
+                    st.rerun()
+
+        if my_vote:
+            st.caption("Your vote is locked in — you can change it until the host locks the category.")
+        else:
+            st.caption("Cast your vote for what category you want to play.")
+        st.divider()
+    elif game.category:
+        render_category_badge(game.category_icon, game.category_label)
+
     st.info("Waiting for the host to start the game…")
     st.write(f"{len(game.players)} player(s) have joined so far.")
 
@@ -58,6 +86,8 @@ elif game.phase == QUESTION:
 
     with st.container(border=True):
         st.caption(f"Question {game.current_index + 1} of {total}")
+        if game.category_label:
+            render_category_badge(game.category_icon, game.category_label)
         st.header(q["question"])
 
         remaining = max(0, int(game.seconds_remaining) + 1)
@@ -112,6 +142,8 @@ elif game.phase == FINISHED:
     player = game.players.get(name)
 
     st.header("🏁 Game over!")
+    if game.category_label:
+        render_category_badge(game.category_icon, game.category_label)
     if rank:
         st.subheader(f"You finished #{rank} with {player.score} points")
 
