@@ -1,44 +1,132 @@
 [
   {
-    "question": "Replace this file's contents with your own knowledge-check questions. What format does each question need?",
+    "question": "What's the correct way to do a soft reset on the touchscreen?",
     "options": [
-      "question, options, correct_index, duration",
-      "prompt, answers, key",
-      "text only, no structure needed",
-      "It doesn't matter, any format works"
+      "Press and hold both scroll wheels on the steering wheel for about 10 seconds",
+      "Turn the car off and wait 5 minutes",
+      "Press the brake pedal three times in a row",
+      "Hold down the horn for 10 seconds"
     ],
     "correct_index": 0,
     "duration": 20
   },
   {
-    "question": "How many answer options can a question have?",
+    "question": "How often does Tesla recommend an alignment (outside of hitting a pothole/curb or a suspension repair)?",
     "options": [
-      "Exactly 2",
-      "Exactly 4",
-      "2 to 6, your choice",
-      "Unlimited"
+      "Every 5,000 miles",
+      "Every 12,000 miles",
+      "Every 25,000 miles",
+      "Only when the guest requests it"
+    ],
+    "correct_index": 1,
+    "duration": 20
+  },
+  {
+    "question": "Whose responsibility are alignment and suspension repairs?",
+    "options": [
+      "The guest's",
+      "The host's",
+      "Split 50/50 between guest and host",
+      "Tesla's directly"
+    ],
+    "correct_index": 1,
+    "duration": 20
+  },
+  {
+    "question": "A tire still has some air but is slowly leaking. What should the guest do?",
+    "options": [
+      "Call roadside assistance for an immediate tow",
+      "Drive to a tire shop for a quick patch repair (about $25)",
+      "Keep driving and ignore it",
+      "Park it and wait for the host to come get it"
+    ],
+    "correct_index": 1,
+    "duration": 20
+  },
+  {
+    "question": "What portion of the cost of new tires is the guest responsible for when a replacement is needed?",
+    "options": [
+      "None of it",
+      "1/4",
+      "1/2",
+      "The full cost"
     ],
     "correct_index": 2,
     "duration": 20
   },
   {
-    "question": "What happens to your score if you answer correctly but slowly?",
+    "question": "Which of these is a warning sign of a 12V battery issue?",
     "options": [
-      "You get 0 points regardless",
-      "You get full points no matter what",
-      "You get fewer points than a fast correct answer, but more than 0",
-      "You get a time penalty subtracted from your total"
+      "Low voltage warning light, phone not charging, or a completely dead car",
+      "Squeaky brakes",
+      "A burning smell from the tires",
+      "The touchscreen turning blue"
+    ],
+    "correct_index": 0,
+    "duration": 20
+  },
+  {
+    "question": "How much battery charge is normal for a Tesla to lose overnight?",
+    "options": [
+      "1-3%",
+      "10-15%",
+      "20-25%",
+      "It should never lose any charge"
+    ],
+    "correct_index": 0,
+    "duration": 20
+  },
+  {
+    "question": "At what point should a guest contact the host about overnight battery drain?",
+    "options": [
+      "Any drain at all, even 1%",
+      "If it exceeds 10%",
+      "If it exceeds 50%",
+      "Never — battery drain isn't the host's concern"
+    ],
+    "correct_index": 1,
+    "duration": 20
+  },
+  {
+    "question": "About how much battery does Sentry Mode use per hour when it's active?",
+    "options": [
+      "~1%",
+      "~5%",
+      "~10%",
+      "~25%"
+    ],
+    "correct_index": 0,
+    "duration": 20
+  },
+  {
+    "question": "What interior temperature does Cabin Overheat Protection keep the car under?",
+    "options": [
+      "90°F",
+      "100°F",
+      "105°F",
+      "120°F"
     ],
     "correct_index": 2,
     "duration": 20
   },
   {
-    "question": "This is a placeholder quiz. Where should real questions go before your session?",
+    "question": "How much can a windshield sunshade reduce interior temperature by?",
     "options": [
-      "Nowhere, keep these",
-      "In data/questions.json, following the same structure",
-      "Directly typed into the Streamlit app each time",
-      "In the README"
+      "Up to 10°F",
+      "Up to 25°F",
+      "Up to 40°F",
+      "Up to 60°F"
+    ],
+    "correct_index": 2,
+    "duration": 20
+  },
+  {
+    "question": "What's the recommended \"Auto\" climate setting for optimal efficiency?",
+    "options": [
+      "65-68°F",
+      "72-74°F",
+      "78-80°F",
+      "82-85°F"
     ],
     "correct_index": 1,
     "duration": 20
