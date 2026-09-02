@@ -142,6 +142,45 @@ def _inject_css() -> None:
             margin-bottom: 0.35rem;
             background: #F4F7F6;
         }
+
+        /* Kahoot-style colored answer tiles on the Play page. Buttons get a
+           stable st-key-opt_<i> class (from key="opt_<i>") based on their
+           on-screen position (A/B/C/D), independent of the question. */
+        .st-key-opt_0 button,
+        .st-key-opt_1 button,
+        .st-key-opt_2 button,
+        .st-key-opt_3 button {
+            min-height: 3.4rem;
+            padding: 0.75rem 1rem;
+            text-align: left;
+            line-height: 1.35;
+            border-width: 0;
+            font-size: 1.02rem;
+        }
+        .st-key-opt_0 button { background-color: #E21B3C; color: #ffffff; }
+        .st-key-opt_0 button:hover { background-color: #c81733; color: #ffffff; }
+        .st-key-opt_1 button { background-color: #1368CE; color: #ffffff; }
+        .st-key-opt_1 button:hover { background-color: #0f57ab; color: #ffffff; }
+        .st-key-opt_2 button { background-color: #D89E00; color: #17130a; }
+        .st-key-opt_2 button:hover { background-color: #bb8900; color: #17130a; }
+        .st-key-opt_3 button { background-color: #26890C; color: #ffffff; }
+        .st-key-opt_3 button:hover { background-color: #1f6f0a; color: #ffffff; }
+
+        /* Belt-and-suspenders: even without wrap=True, never hide answer text. */
+        .st-key-opt_0 button p,
+        .st-key-opt_1 button p,
+        .st-key-opt_2 button p,
+        .st-key-opt_3 button p {
+            white-space: normal;
+            overflow: visible;
+            text-overflow: unset;
+            word-break: break-word;
+        }
+
+        /* A little warmth behind the otherwise all-white page background. */
+        [data-testid="stAppViewContainer"] > .main {
+            background: radial-gradient(circle at 15% 0%, #EAF8F1 0%, #FFFFFF 45%);
+        }
         </style>
         """,
         unsafe_allow_html=True,
