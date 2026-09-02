@@ -107,6 +107,41 @@ def _inject_css() -> None:
             font-weight: 600;
             word-break: break-word;
         }
+
+        .category-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            padding: 0.3rem 0.9rem;
+            border-radius: 999px;
+            background: linear-gradient(135deg, #E4F7EE, #D2F0E3);
+            color: #0B3D2E;
+            font-weight: 700;
+            font-size: 0.95rem;
+            margin-bottom: 0.7rem;
+        }
+
+        .roulette-box {
+            text-align: center;
+            padding: 1.5rem;
+            border-radius: 16px;
+            background: linear-gradient(135deg, #0B3D2E 0%, #00B37E 100%);
+            color: #ffffff;
+            font-size: 1.7rem;
+            font-weight: 700;
+            margin: 0.6rem 0 1.1rem 0;
+            box-shadow: 0 8px 24px rgba(11, 61, 46, 0.25);
+        }
+
+        .vote-tally-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0.45rem 0.85rem;
+            border-radius: 10px;
+            margin-bottom: 0.35rem;
+            background: #F4F7F6;
+        }
         </style>
         """,
         unsafe_allow_html=True,
@@ -149,6 +184,40 @@ def render_name_chips(names, tone: str = "neutral") -> None:
         for n in names
     )
     st.markdown(f'<div class="name-chip-row">{chips}</div>', unsafe_allow_html=True)
+
+
+def render_category_badge(icon: str, label: str) -> None:
+    """Small pill showing the active category, e.g. on the game header."""
+    st.markdown(
+        f'<div class="category-badge">{icon} {html.escape(str(label))}</div>',
+        unsafe_allow_html=True,
+    )
+
+
+def render_roulette_box(icon: str, label: str) -> None:
+    """Big banner-style box used for the roulette spin/result."""
+    st.markdown(
+        f'<div class="roulette-box">🎰 {icon} {html.escape(str(label))}</div>',
+        unsafe_allow_html=True,
+    )
+
+
+def render_vote_tally(rows) -> None:
+    """rows: iterable of (key, label, icon, count), already sorted."""
+    if not rows:
+        st.caption("No votes yet.")
+        return
+    html_rows = []
+    for _key, label, icon, count in rows:
+        safe_label = html.escape(str(label))
+        vote_word = "vote" if count == 1 else "votes"
+        html_rows.append(
+            '<div class="vote-tally-row">'
+            f'<span>{icon} {safe_label}</span>'
+            f'<span><strong>{count}</strong> {vote_word}</span>'
+            "</div>"
+        )
+    st.markdown("".join(html_rows), unsafe_allow_html=True)
 
 
 def render_leaderboard(board, limit: int | None = None) -> None:
