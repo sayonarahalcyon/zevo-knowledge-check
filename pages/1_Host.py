@@ -3,7 +3,7 @@ from streamlit_autorefresh import st_autorefresh
 
 from game_engine.state import get_store, LOBBY, QUESTION, REVEAL, FINISHED
 from game_engine.questions import load_questions
-from theme import page, banner, render_leaderboard
+from theme import page, banner, render_leaderboard, render_name_chips
 
 page("Host", "🖥️")
 banner("🖥️", "Host screen — create a game and run the room")
@@ -100,11 +100,21 @@ elif game.phase == REVEAL:
             prefix = "✅" if i == q["correct_index"] else "◻️"
             st.write(f"{prefix} {chr(65 + i)}. {opt}")
 
-        num_correct = sum(
-            1 for p in game.players.values()
+        correct_names = [
+            name for name, p in game.players.items()
             if game.current_index in p.answers and p.answers[game.current_index].correct
-        )
-        st.write(f"**{num_correct} / {len(game.players)}** players got it right (answer: {correct_letter}).")
+        ]
+        missed_names = [name for name in game.players if name not in correct_names]
+
+        st.write(f"**{len(correct_names)} / {len(game.players)}** players got it right (answer: {correct_letter}).")
+
+        col_correct, col_missed = st.columns(2)
+        with col_correct:
+            st.markdown("**✅ Got it right**")
+            render_name_chips(correct_names, tone="correct")
+        with col_missed:
+            st.markdown("**❌ Missed it**")
+            render_name_chips(missed_names, tone="incorrect")
 
     st.subheader("Leaderboard so far")
     render_leaderboard(store.leaderboard(code), limit=10)
