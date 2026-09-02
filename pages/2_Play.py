@@ -2,12 +2,12 @@ import streamlit as st
 from streamlit_autorefresh import st_autorefresh
 
 from game_engine.state import get_store, LOBBY, QUESTION, REVEAL, FINISHED
+from theme import page, banner, render_leaderboard
 
-st.set_page_config(page_title="Play — Live Knowledge Check", page_icon="🎮", layout="centered")
+page("Play", "🎮")
+banner("🎮", "Player screen — join with your host's code")
 
 store = get_store()
-
-st.title("🎮 Play")
 
 # ------------------------------------------------------------------ JOIN FORM
 if "player_name" not in st.session_state or "player_code" not in st.session_state:
@@ -55,26 +55,28 @@ elif game.phase == QUESTION:
 
     total = len(game.questions)
     q = game.current_question
-    st.caption(f"Question {game.current_index + 1} of {total}")
-    st.header(q["question"])
 
-    remaining = max(0, int(game.seconds_remaining) + 1)
+    with st.container(border=True):
+        st.caption(f"Question {game.current_index + 1} of {total}")
+        st.header(q["question"])
 
-    if already_answered or game.is_time_up:
-        if already_answered:
-            picked = player.answers[game.current_index].choice_index
-            st.success(f"Answer locked in: {chr(65 + picked)}. {q['options'][picked]}")
+        remaining = max(0, int(game.seconds_remaining) + 1)
+
+        if already_answered or game.is_time_up:
+            if already_answered:
+                picked = player.answers[game.current_index].choice_index
+                st.success(f"Answer locked in: {chr(65 + picked)}. {q['options'][picked]}")
+            else:
+                st.warning("Time's up — no answer submitted.")
+            st.caption("Waiting for the host to reveal the answer…")
         else:
-            st.warning("Time's up — no answer submitted.")
-        st.caption("Waiting for the host to reveal the answer…")
-    else:
-        st.metric("Time remaining", f"{remaining}s")
-        cols = st.columns(2)
-        for i, opt in enumerate(q["options"]):
-            col = cols[i % 2]
-            if col.button(f"{chr(65 + i)}. {opt}", key=f"opt_{game.current_index}_{i}", use_container_width=True):
-                store.submit_answer(code, name, i)
-                st.rerun()
+            st.metric("Time remaining", f"{remaining}s")
+            cols = st.columns(2)
+            for i, opt in enumerate(q["options"]):
+                col = cols[i % 2]
+                if col.button(f"{chr(65 + i)}. {opt}", key=f"opt_{game.current_index}_{i}", use_container_width=True):
+                    store.submit_answer(code, name, i)
+                    st.rerun()
 
 # ------------------------------------------------------------------ REVEAL
 elif game.phase == REVEAL:
@@ -85,19 +87,20 @@ elif game.phase == REVEAL:
     correct_letter = chr(65 + q["correct_index"])
     correct_text = q["options"][q["correct_index"]]
 
-    result = player.answers.get(game.current_index) if player else None
-    if result and result.correct:
-        st.success(f"✅ Correct! +{result.points} points")
-    elif result:
-        st.error(f"❌ Not quite. Correct answer: {correct_letter}. {correct_text}")
-    else:
-        st.warning(f"No answer submitted. Correct answer: {correct_letter}. {correct_text}")
+    with st.container(border=True):
+        result = player.answers.get(game.current_index) if player else None
+        if result and result.correct:
+            st.success(f"✅ Correct! +{result.points} points")
+        elif result:
+            st.error(f"❌ Not quite. Correct answer: {correct_letter}. {correct_text}")
+        else:
+            st.warning(f"No answer submitted. Correct answer: {correct_letter}. {correct_text}")
 
-    board = store.leaderboard(code)
-    names_in_order = [n for n, _ in board]
-    rank = names_in_order.index(name) + 1 if name in names_in_order else None
-    my_score = player.score if player else 0
-    st.metric("Your score", my_score, delta=f"Rank #{rank}" if rank else None)
+        board = store.leaderboard(code)
+        names_in_order = [n for n, _ in board]
+        rank = names_in_order.index(name) + 1 if name in names_in_order else None
+        my_score = player.score if player else 0
+        st.metric("Your score", my_score, delta=f"Rank #{rank}" if rank else None)
 
     st.caption("Waiting for the host to move to the next question…")
 
@@ -114,10 +117,7 @@ elif game.phase == FINISHED:
 
     st.divider()
     st.subheader("Final leaderboard")
-    medals = ["🥇", "🥈", "🥉"]
-    for r, (n, score) in enumerate(board, start=1):
-        medal = medals[r - 1] if r <= 3 else f"{r}."
-        st.write(f"{medal} **{n}** — {score}")
+    render_leaderboard(board)
 
     st.divider()
     if st.button("Leave"):
