@@ -423,6 +423,576 @@
           "duration": 20
         }
       ]
+    },
+    {
+      "key": "access_keys",
+      "label": "Access & Keys",
+      "icon": "🔑",
+      "questions": [
+        {
+          "question": "What's the hard limit on paired phone keys for a Tesla vehicle?",
+          "options": [
+            "15",
+            "17",
+            "19",
+            "21"
+          ],
+          "correct_index": 2,
+          "duration": 20
+        },
+        {
+          "question": "What's a confirmed cause of the Tesla app going white-screen or crashing that agents should check for?",
+          "options": [
+            "Low phone storage",
+            "Weak wifi signal",
+            "Outdated Tesla firmware",
+            "An expired ChargeKey link"
+          ],
+          "correct_index": 0,
+          "duration": 20
+        },
+        {
+          "question": "A renter's phone is dead and they can't access the EV. What should CS do after confirming their phone number and email?",
+          "options": [
+            "Send a brand-new ChargeKey link",
+            "Unlock the vehicle manually via Standard Fleet",
+            "Escalate straight to a Manager",
+            "Tell them to wait until their phone charges"
+          ],
+          "correct_index": 1,
+          "duration": 20
+        },
+        {
+          "question": "Before removing and re-adding a renter's name in SF for a Tesla Link / SF Link error, what should you confirm first?",
+          "options": [
+            "That they're using the correct email",
+            "That their deposit has cleared",
+            "That the vehicle is fully charged",
+            "That they've completed a trip before"
+          ],
+          "correct_index": 0,
+          "duration": 20
+        },
+        {
+          "question": "After how many failed phone-key reconnect attempts should an agent escalate to a Manager?",
+          "options": [
+            "1",
+            "2",
+            "3",
+            "5"
+          ],
+          "correct_index": 2,
+          "duration": 20
+        },
+        {
+          "question": "What should agents never do in Standard Fleet unless explicitly instructed?",
+          "options": [
+            "Create new keys",
+            "View the vehicle's coordinates",
+            "Lock the vehicle",
+            "Unlock the vehicle for a verified request"
+          ],
+          "correct_index": 0,
+          "duration": 20
+        },
+        {
+          "question": "How should FasTrak be set when a rented Tesla goes through a toll area?",
+          "options": [
+            "Always set to 1, regardless of passengers",
+            "Matched to the number of occupants in the vehicle",
+            "Set by the host before every booking",
+            "Always set to the vehicle's max capacity"
+          ],
+          "correct_index": 1,
+          "duration": 20
+        },
+        {
+          "question": "When can Chill Mode actually be turned off using the button in ZOMP?",
+          "options": [
+            "Only while the vehicle is parked",
+            "Anytime, even mid-drive",
+            "Only the guest can do it, from the app",
+            "It can never be turned off"
+          ],
+          "correct_index": 0,
+          "duration": 20
+        }
+      ]
+    },
+    {
+      "key": "billing_tax",
+      "label": "Billing & Sales Tax",
+      "icon": "🧾",
+      "questions": [
+        {
+          "question": "How long do pre-authorization holds typically take to fall off on their own?",
+          "options": [
+            "Same day",
+            "1–7 business days",
+            "2–3 weeks",
+            "They never fall off automatically"
+          ],
+          "correct_index": 1,
+          "duration": 20
+        },
+        {
+          "question": "How long is ZEVO's grace period before late fees kick in on a booking?",
+          "options": [
+            "12 hours",
+            "24 hours",
+            "48 hours",
+            "72 hours"
+          ],
+          "correct_index": 1,
+          "duration": 20
+        },
+        {
+          "question": "What lets CS approve a first extension request without escalating it?",
+          "options": [
+            "The account is in good standing",
+            "Manager sign-off, every time",
+            "The guest pays the full balance up front",
+            "Only bookings under 30 days qualify"
+          ],
+          "correct_index": 0,
+          "duration": 20
+        },
+        {
+          "question": "An extension request must escalate to a Manager once the outstanding base fare exceeds what amount?",
+          "options": [
+            "$100",
+            "$200",
+            "$300",
+            "$500"
+          ],
+          "correct_index": 2,
+          "duration": 20
+        },
+        {
+          "question": "What's the refundable security deposit ZEVO collects from guests?",
+          "options": [
+            "$100",
+            "$150",
+            "$200",
+            "$300"
+          ],
+          "correct_index": 2,
+          "duration": 20
+        },
+        {
+          "question": "What flat processing fee does ZEVO add on top of supercharging costs billed through the platform?",
+          "options": [
+            "5%",
+            "10%",
+            "15%",
+            "20%"
+          ],
+          "correct_index": 1,
+          "duration": 20
+        },
+        {
+          "question": "As of the July 27th rollout, what does ZEVO's new sales tax apply to?",
+          "options": [
+            "Base fare only",
+            "Everything on the receipt",
+            "Fees and add-ons only",
+            "Insurance only"
+          ],
+          "correct_index": 0,
+          "duration": 20
+        },
+        {
+          "question": "Per the sales tax rollout table, which state has the highest rate applied to ZEVO bookings?",
+          "options": [
+            "Texas",
+            "California",
+            "Georgia",
+            "Arizona"
+          ],
+          "correct_index": 2,
+          "duration": 20
+        }
+      ]
+    },
+    {
+      "key": "claims_escalations",
+      "label": "Claims & Escalations",
+      "icon": "🚨",
+      "questions": [
+        {
+          "question": "What's the minimum age to book a vehicle on ZEVO?",
+          "options": [
+            "18",
+            "19",
+            "21",
+            "25"
+          ],
+          "correct_index": 2,
+          "duration": 20
+        },
+        {
+          "question": "If a renter ends their booking early, what happens to their unused days?",
+          "options": [
+            "They're forfeited entirely",
+            "Refunded at the daily rate — there's no early termination fee",
+            "Refunded minus a termination fee",
+            "Rolled into their next booking only"
+          ],
+          "correct_index": 1,
+          "duration": 20
+        },
+        {
+          "question": "About how long does it take a claim to settle once a booking ends because of it?",
+          "options": [
+            "1 week",
+            "2 weeks",
+            "4 weeks",
+            "8 weeks"
+          ],
+          "correct_index": 2,
+          "duration": 20
+        },
+        {
+          "question": "During an active credit-card dispute in Stripe, what should happen to the guest's vehicle access?",
+          "options": [
+            "Nothing changes until the dispute resolves",
+            "It's removed immediately and stays disabled until the dispute is resolved",
+            "It's restored once the guest sends a screenshot",
+            "It's only removed if the guest has disputed before"
+          ],
+          "correct_index": 1,
+          "duration": 20
+        },
+        {
+          "question": "On the tire decision tree, what should a guest do if the tire is completely flat?",
+          "options": [
+            "Drive slowly to the nearest tire shop",
+            "Not drive — move to a safe location and contact roadside assistance",
+            "Wait in place for the host to arrive",
+            "Attempt to change it themselves"
+          ],
+          "correct_index": 1,
+          "duration": 20
+        },
+        {
+          "question": "What counts as excessive mileage on a ZEVO rental?",
+          "options": [
+            "Over 500 miles/week",
+            "Over 1,000 miles/week",
+            "Over 1,500 miles/week",
+            "Over 2,000 miles/week"
+          ],
+          "correct_index": 2,
+          "duration": 20
+        },
+        {
+          "question": "Which gig platform is explicitly NOT supported for ZEVO rentals?",
+          "options": [
+            "Uber",
+            "DoorDash",
+            "Lyft",
+            "Instacart"
+          ],
+          "correct_index": 2,
+          "duration": 20
+        },
+        {
+          "question": "Who's responsible for towing/transport costs a host incurs picking up a vehicle after non-payment?",
+          "options": [
+            "ZEVO covers it directly",
+            "The host absorbs it",
+            "The guest — ZEVO will attempt to recover it from them",
+            "It's split between host and ZEVO"
+          ],
+          "correct_index": 2,
+          "duration": 20
+        }
+      ]
+    },
+    {
+      "key": "fees_referrals",
+      "label": "Fees & Referrals",
+      "icon": "💸",
+      "questions": [
+        {
+          "question": "What platform fee does ZEVO charge standard self-managed hosts?",
+          "options": [
+            "10%",
+            "15%",
+            "25%",
+            "30%"
+          ],
+          "correct_index": 2,
+          "duration": 20
+        },
+        {
+          "question": "What's ZEVO's insurance deductible on a significant claim?",
+          "options": [
+            "$500",
+            "$1,000",
+            "$2,500",
+            "$5,000"
+          ],
+          "correct_index": 2,
+          "duration": 20
+        },
+        {
+          "question": "At which battery (SOC) violation does a guest first get charged a fee instead of just a warning?",
+          "options": [
+            "1st",
+            "2nd",
+            "3rd",
+            "4th"
+          ],
+          "correct_index": 3,
+          "duration": 20
+        },
+        {
+          "question": "What's the maximum SOC violation fee a guest can be charged for a single occurrence?",
+          "options": [
+            "$20",
+            "$30",
+            "$50",
+            "$100"
+          ],
+          "correct_index": 2,
+          "duration": 20
+        },
+        {
+          "question": "What's the incidental fee for an unauthorized pet found in the vehicle?",
+          "options": [
+            "$50 flat",
+            "$100 flat",
+            "Deposit forfeiture plus a $200 fee",
+            "$500 flat"
+          ],
+          "correct_index": 2,
+          "duration": 20
+        },
+        {
+          "question": "How long after a rental ends is a guest still on the hook for parking tickets?",
+          "options": [
+            "Not responsible after return",
+            "Up to 24 hours",
+            "Up to 7 days",
+            "Up to 30 days"
+          ],
+          "correct_index": 1,
+          "duration": 20
+        },
+        {
+          "question": "How many days does ZEVO allow for ticket processing before a guest might see a reimbursement request?",
+          "options": [
+            "30 days",
+            "90 days",
+            "180 days",
+            "365 days"
+          ],
+          "correct_index": 2,
+          "duration": 20
+        },
+        {
+          "question": "How much can a host earn for referring a new host who successfully lists and rents their vehicle?",
+          "options": [
+            "Up to $100",
+            "Up to $200",
+            "Up to $350",
+            "Up to $500"
+          ],
+          "correct_index": 2,
+          "duration": 20
+        }
+      ]
+    },
+    {
+      "key": "driving_charging",
+      "label": "Driving & Charging",
+      "icon": "🛣️",
+      "questions": [
+        {
+          "question": "Which Tesla driving mode makes the car inch forward like a traditional gas car when you take your foot off the brake?",
+          "options": [
+            "Roll",
+            "Creep",
+            "Hold",
+            "Chill"
+          ],
+          "correct_index": 1,
+          "duration": 20
+        },
+        {
+          "question": "What does a solid green charge port light mean?",
+          "options": [
+            "Charging is in progress",
+            "Charging is complete",
+            "There's a charging error",
+            "The cable isn't connected"
+          ],
+          "correct_index": 1,
+          "duration": 20
+        },
+        {
+          "question": "How do you activate Autopilot while driving?",
+          "options": [
+            "Press the brake pedal twice",
+            "Pull the right stalk down twice",
+            "Tap an icon on the touchscreen",
+            "Say \"Autopilot on\""
+          ],
+          "correct_index": 1,
+          "duration": 20
+        },
+        {
+          "question": "After a Tesla has been submerged in floodwater, what's the correct first step?",
+          "options": [
+            "Try restarting it once it dries out",
+            "Move away and call 911 if there's smoke, heat, or hissing, then contact ZEVO",
+            "Charge it right away to test the battery",
+            "Drive it a short distance to check for issues"
+          ],
+          "correct_index": 1,
+          "duration": 20
+        },
+        {
+          "question": "When using an automatic car wash, when should you enable \"Free Roll\" mode?",
+          "options": [
+            "Every wash, no exceptions",
+            "Only for a touchless conveyor car wash",
+            "Only for hand washes",
+            "It doesn't apply to Teslas"
+          ],
+          "correct_index": 1,
+          "duration": 20
+        },
+        {
+          "question": "What should you do right after you finish charging at a Supercharger?",
+          "options": [
+            "Leave it plugged in",
+            "Unplug it to avoid idle fees",
+            "Wait 10 minutes before unplugging",
+            "Call ZEVO to confirm it's done"
+          ],
+          "correct_index": 1,
+          "duration": 20
+        },
+        {
+          "question": "In extreme weather, what can you do from the Tesla app before you start driving?",
+          "options": [
+            "Precondition the car",
+            "Disable climate control entirely",
+            "Automatically order roadside assistance",
+            "Nothing can be done remotely"
+          ],
+          "correct_index": 0,
+          "duration": 20
+        },
+        {
+          "question": "If a dashboard alert says the car is preparing to shut down or may not restart, what should you do?",
+          "options": [
+            "Restart the touchscreen and keep driving",
+            "Stop driving and contact ZEVO or Roadside Assistance",
+            "Keep driving until you reach the nearest exit",
+            "Perform a manual high-voltage reset"
+          ],
+          "correct_index": 1,
+          "duration": 20
+        }
+      ]
+    },
+    {
+      "key": "money_mileage",
+      "label": "Money & Mileage",
+      "icon": "🧮",
+      "questions": [
+        {
+          "question": "What's the security deposit for drivers ages 21–24, above the standard rate?",
+          "options": [
+            "$250",
+            "$300",
+            "$400",
+            "$500"
+          ],
+          "correct_index": 2,
+          "duration": 20
+        },
+        {
+          "question": "What premium do eligible daily bookings carry over the default weekly rate?",
+          "options": [
+            "10%",
+            "15%",
+            "20%",
+            "25%"
+          ],
+          "correct_index": 2,
+          "duration": 20
+        },
+        {
+          "question": "What's the standard default daily mileage cap on a ZEVO vehicle?",
+          "options": [
+            "150 miles",
+            "200 miles",
+            "225 miles",
+            "300 miles"
+          ],
+          "correct_index": 2,
+          "duration": 20
+        },
+        {
+          "question": "What's the overage fee for exceeding a vehicle's mileage cap?",
+          "options": [
+            "$0.10 per mile",
+            "$0.20 per mile",
+            "$0.30 per mile",
+            "$0.50 per mile"
+          ],
+          "correct_index": 2,
+          "duration": 20
+        },
+        {
+          "question": "What's ZEVO's auto liability coverage limit for eligible driving?",
+          "options": [
+            "$500,000",
+            "$750,000",
+            "$1,000,000",
+            "$2,000,000"
+          ],
+          "correct_index": 2,
+          "duration": 20
+        },
+        {
+          "question": "For a vehicle valued $50,001–$105,000 ACV, what's the physical-damage deductible?",
+          "options": [
+            "$2,500",
+            "$3,500",
+            "$5,000",
+            "$7,500"
+          ],
+          "correct_index": 2,
+          "duration": 20
+        },
+        {
+          "question": "How much can a driver earn for referring a new driver to ZEVO?",
+          "options": [
+            "Up to $50",
+            "Up to $100",
+            "Up to $150",
+            "Up to $200"
+          ],
+          "correct_index": 1,
+          "duration": 20
+        },
+        {
+          "question": "Which toll transponder is commonly used on Texas ZEVO vehicles?",
+          "options": [
+            "FasTrak",
+            "SunPass",
+            "TxTag or TollTag",
+            "E-ZPass"
+          ],
+          "correct_index": 2,
+          "duration": 20
+        }
+      ]
     }
   ]
 }
