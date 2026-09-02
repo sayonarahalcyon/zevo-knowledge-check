@@ -101,10 +101,12 @@ elif game.phase == QUESTION:
             st.caption("Waiting for the host to reveal the answer…")
         else:
             st.metric("Time remaining", f"{remaining}s")
+            shapes = ["▲", "◆", "●", "■"]
             cols = st.columns(2)
             for i, opt in enumerate(q["options"]):
                 col = cols[i % 2]
-                if col.button(f"{chr(65 + i)}. {opt}", key=f"opt_{game.current_index}_{i}", use_container_width=True):
+                label = f"{shapes[i]} {chr(65 + i)}. {opt}"
+                if col.button(label, key=f"opt_{i}", use_container_width=True, wrap=True):
                     store.submit_answer(code, name, i)
                     st.rerun()
 
