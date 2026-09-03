@@ -10,10 +10,7 @@ same as the in-memory game state does. Good enough for "how many games has
 the room run recently", not for all-time analytics.
 
 The file lives in the system temp directory rather than next to the repo
-code: some managed hosts (including, it turns out, Streamlit Community
-Cloud) mount the deployed app source read-only, so writing beside the code
-can silently fail. The OS temp dir is writable in effectively every
-sandboxed/managed Python environment.
+code, since some managed hosts mount the deployed app source read-only.
 """
 
 import json
@@ -22,27 +19,34 @@ import tempfile
 
 _STATS_PATH = os.path.join(tempfile.gettempdir(), "zevo_kc_runtime_stats.json")
 
-_last_write_error: str | None = None
+_last_error: str | None = None
 
 
 def _read() -> dict:
+    global _last_error
     try:
         with open(_STATS_PATH, "r") as f:
-            return json.load(f)
-    except (FileNotFoundError, json.JSONDecodeError, OSError):
+            data = json.load(f)
+        _last_error = None
+        return data
+    except FileNotFoundError:
+        _last_error = None  # normal on first run, not a real error
+        return {"games_created": 0}
+    except Exception as e:  # noqa: BLE001 - deliberately broad for diagnostics
+        _last_error = f"read failed ({type(e).__name__}): {e}"
         return {"games_created": 0}
 
 
 def _write(data: dict) -> None:
-    global _last_write_error
+    global _last_error
     tmp_path = _STATS_PATH + ".tmp"
     try:
         with open(tmp_path, "w") as f:
             json.dump(data, f)
         os.replace(tmp_path, _STATS_PATH)
-        _last_write_error = None
-    except OSError as e:
-        _last_write_error = str(e)  # best-effort; never let stats tracking break the app
+        _last_error = None
+    except Exception as e:  # noqa: BLE001 - deliberately broad; never break the app
+        _last_error = f"write failed ({type(e).__name__}): {e}"
 
 
 def increment_games_created() -> int:
@@ -57,6 +61,22 @@ def get_games_created() -> int:
     return _read().get("games_created", 0)
 
 
-def get_last_write_error() -> str | None:
-    """For diagnostics: the last OSError message hit while writing, if any."""
-    return _last_write_error
+def get_last_error() -> str | None:
+    """For diagnostics: the last read/write problem hit, if any."""
+    return _last_error
+
+
+def get_debug_info() -> dict:
+    """For diagnostics: where the counter lives and what's on disk right now."""
+    info = {"path": _STATS_PATH, "exists": os.path.exists(_STATS_PATH)}
+    try:
+        info["writable_dir"] = os.access(os.path.dirname(_STATS_PATH), os.W_OK)
+    except Exception as e:  # noqa: BLE001
+        info["writable_dir"] = f"check failed: {e}"
+    if info["exists"]:
+        try:
+            with open(_STATS_PATH, "r") as f:
+                info["raw_contents"] = f.read()
+        except Exception as e:  # noqa: BLE001
+            info["raw_contents"] = f"read failed: {e}"
+    return info
