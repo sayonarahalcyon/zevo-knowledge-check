@@ -4,7 +4,7 @@ import html
 
 import streamlit as st
 
-from game_engine.stats import get_games_created
+from game_engine.stats import get_games_created, get_last_write_error
 
 APP_NAME = "ZEVO Knowledge Check"
 TAGLINE = "Live, group knowledge checks for ZEVO coworking sessions"
@@ -203,6 +203,9 @@ def _render_sidebar_stats() -> None:
         st.divider()
         st.metric("🎮 Games hosted", get_games_created())
         st.caption("Since last deploy")
+        error = get_last_write_error()
+        if error:
+            st.caption(f"⚠️ Counter storage error: {error}")
 
 
 def banner(icon: str, subtitle: str | None = None) -> None:
