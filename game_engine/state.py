@@ -24,6 +24,8 @@ from typing import Dict, List, Optional, Tuple
 
 import streamlit as st
 
+from game_engine import stats
+
 LOBBY = "lobby"
 QUESTION = "question"
 REVEAL = "reveal"
@@ -153,6 +155,7 @@ class GameStore:
                 game.category_icon = meta["icon"]
 
             self._games[code] = game
+            stats.increment_games_created()
             return code
 
     def get(self, code: str) -> Optional[Game]:
