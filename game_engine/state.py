@@ -24,7 +24,7 @@ from typing import Dict, List, Optional, Tuple
 
 import streamlit as st
 
-from game_engine import stats
+from game_engine import history, stats
 
 LOBBY = "lobby"
 QUESTION = "question"
@@ -281,6 +281,11 @@ class GameStore:
                 return
             if game.current_index + 1 >= len(game.questions):
                 game.phase = FINISHED
+                history.record_game_result(
+                    code,
+                    game.category_label,
+                    [{"name": p.name, "score": p.score} for p in game.players.values()],
+                )
             else:
                 game.current_index += 1
                 game.phase = QUESTION
