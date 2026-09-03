@@ -4,6 +4,8 @@ import html
 
 import streamlit as st
 
+from game_engine.stats import get_games_created
+
 APP_NAME = "ZEVO Knowledge Check"
 TAGLINE = "Live, group knowledge checks for ZEVO coworking sessions"
 
@@ -192,6 +194,15 @@ def page(title_suffix: str, icon: str) -> None:
     full_title = f"{APP_NAME} — {title_suffix}" if title_suffix else APP_NAME
     st.set_page_config(page_title=full_title, page_icon=icon, layout="centered")
     _inject_css()
+    _render_sidebar_stats()
+
+
+def _render_sidebar_stats() -> None:
+    """Small games-hosted counter under the page nav in the left sidebar."""
+    with st.sidebar:
+        st.divider()
+        st.metric("🎮 Games hosted", get_games_created())
+        st.caption("Since last deploy")
 
 
 def banner(icon: str, subtitle: str | None = None) -> None:
