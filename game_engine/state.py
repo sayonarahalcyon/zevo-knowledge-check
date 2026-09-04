@@ -35,8 +35,7 @@ HOST_PICK = "host"
 VOTE = "vote"
 ROULETTE = "roulette"
 
-MIN_POINTS = 500
-MAX_POINTS = 1000
+POINTS_PER_CORRECT = 5
 DEFAULT_DURATION = 20  # seconds, used if a question doesn't specify one
 
 
@@ -254,13 +253,8 @@ class GameStore:
 
             q = game.current_question
             elapsed = game.seconds_elapsed
-            duration = game.question_duration
             correct = choice_index == q["correct_index"]
-            if correct:
-                fraction_left = max(0.0, (duration - elapsed) / duration)
-                points = int(MIN_POINTS + (MAX_POINTS - MIN_POINTS) * fraction_left)
-            else:
-                points = 0
+            points = POINTS_PER_CORRECT if correct else 0
             player.answers[game.current_index] = Answer(
                 choice_index=choice_index,
                 correct=correct,
