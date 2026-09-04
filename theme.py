@@ -179,6 +179,23 @@ def _inject_css() -> None:
             word-break: break-word;
         }
 
+        /* Games-hosted counter in the sidebar, styled to look like a big
+           st.metric value even though it's really a link to the Admin page. */
+        .st-key-games_hosted_link a {
+            font-size: 2.2rem;
+            font-weight: 700;
+            color: #0B3D2E;
+            text-decoration: none;
+            line-height: 1.2;
+        }
+        .st-key-games_hosted_link a:hover {
+            color: #00B37E;
+            text-decoration: none;
+        }
+        .st-key-games_hosted_link [data-testid="stPageLink-Icon"] {
+            display: none;
+        }
+
         /* A little warmth behind the otherwise all-white page background. */
         [data-testid="stAppViewContainer"] > .main {
             background: radial-gradient(circle at 15% 0%, #EAF8F1 0%, #FFFFFF 45%);
@@ -198,11 +215,21 @@ def page(title_suffix: str, icon: str) -> None:
 
 
 def _render_sidebar_stats() -> None:
-    """Small games-hosted counter under the page nav in the left sidebar."""
+    """Games-hosted counter under the page nav in the left sidebar.
+
+    The count itself is a link (styled to look like a big metric value) to
+    the Admin page, so clicking it jumps straight into the session/player/
+    answer drill-down there.
+    """
     with st.sidebar:
         st.divider()
-        st.metric("🎮 Games hosted", get_games_created())
-        st.caption("Since last deploy")
+        st.caption("🎮 Games hosted")
+        with st.container(key="games_hosted_link"):
+            st.page_link(
+                "pages/3_Admin.py",
+                label=str(get_games_created()),
+            )
+        st.caption("Since last deploy — click the number to view sessions")
         error = get_last_error()
         if error:
             st.caption(f"⚠️ {error}")
