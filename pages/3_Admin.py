@@ -1,3 +1,5 @@
+import datetime
+
 import streamlit as st
 
 from game_engine import history
@@ -42,13 +44,17 @@ if not sessions:
     if error:
         st.error(f"Session history isn't loading: {error}")
     else:
-        st.caption("No finished games recorded yet.")
+        st.caption("No finished games yet since the app's last deploy/reboot.")
     st.stop()
+
+
+def _played_str(ts: float) -> str:
+    return datetime.datetime.fromtimestamp(ts).strftime("%b %d, %Y %I:%M %p")
 
 
 def _session_label(s: dict) -> str:
     return (
-        f'{s["code"]} · {s.get("category") or "—"} · {s["played_at"]} '
+        f'{s["code"]} · {s.get("category") or "—"} · {_played_str(s["played_at"])} '
         f'· {len(s["players"])} player(s)'
     )
 
@@ -64,7 +70,13 @@ session = sessions[choice]
 
 st.divider()
 st.markdown(f"### Join code `{session['code']}`")
-st.caption(f'{session.get("category") or "—"} · played {session["played_at"]}')
+st.caption(f'{session.get("category") or "—"} · played {_played_str(session["played_at"])}')
+
+if session.get("legacy"):
+    st.caption(
+        "⚠️ This session was recorded before per-question answers were tracked, "
+        "so only final scores are available below."
+    )
 
 players_sorted = sorted(session["players"], key=lambda p: p["score"], reverse=True)
 medals = {0: "🥇", 1: "🥈", 2: "🥉"}
@@ -89,9 +101,16 @@ for rank, p in enumerate(players_sorted):
 
 st.divider()
 st.caption(
-    "Stored in a Google Sheet, so this list survives redeploys and reboots "
-    "(unlike the games-hosted counter above, which still resets)."
+    "This list resets on every redeploy/reboot, same as the games-hosted "
+    "counter — it's results since the app last restarted, not a permanent "
+    "historical record."
 )
+
+sheet_error = history.get_last_sheet_error()
+if sheet_error:
+    st.caption(f"📄 Google Sheet mirror: ⚠️ {sheet_error}")
+else:
+    st.caption("📄 Every game above is also mirrored to a Google Sheet, so it survives redeploys too.")
 
 error = history.get_last_error()
 if error:
