@@ -6,7 +6,7 @@ from game_engine import history
 from theme import page, banner
 
 page("Admin", "🛠️")
-banner("🛠️", "Admin — every agent who's played, their score, and when")
+banner("🛠️", "Admin — every session, its agents, scores, and answers")
 
 # Locked behind a password set in the app's Streamlit secrets (Manage app ->
 # Settings -> Secrets: admin_password = "..."). If no secret is set yet, the
@@ -37,24 +37,65 @@ if not ADMIN_PASSWORD:
         "Community Cloud to lock it down."
     )
 
-results = history.get_all_results()
+sessions = history.get_all_sessions()
 
-if not results:
+if not sessions:
     st.caption("No finished games yet since the app's last deploy/reboot.")
-else:
-    rows = [
-        {
-            "Agent": r["name"],
-            "Score": r["score"],
-            "Category": r.get("category") or "—",
-            "Game code": r.get("code", "—"),
-            "Played": datetime.datetime.fromtimestamp(r["played_at"]).strftime("%b %d, %Y %I:%M %p"),
-        }
-        for r in sorted(results, key=lambda r: r["played_at"], reverse=True)
-    ]
-    st.subheader(f"{len(rows)} result(s)")
-    st.dataframe(rows, use_container_width=True, hide_index=True)
+    st.stop()
 
+
+def _played_str(ts: float) -> str:
+    return datetime.datetime.fromtimestamp(ts).strftime("%b %d, %Y %I:%M %p")
+
+
+def _session_label(s: dict) -> str:
+    return (
+        f'{s["code"]} · {s.get("category") or "—"} · {_played_str(s["played_at"])} '
+        f'· {len(s["players"])} player(s)'
+    )
+
+
+st.subheader(f"{len(sessions)} session(s)")
+
+choice = st.selectbox(
+    "Choose a session to drill into",
+    options=range(len(sessions)),
+    format_func=lambda i: _session_label(sessions[i]),
+)
+session = sessions[choice]
+
+st.divider()
+st.markdown(f"### Join code `{session['code']}`")
+st.caption(f'{session.get("category") or "—"} · played {_played_str(session["played_at"])}')
+
+if session.get("legacy"):
+    st.caption(
+        "⚠️ This session was recorded before per-question answers were tracked, "
+        "so only final scores are available below."
+    )
+
+players_sorted = sorted(session["players"], key=lambda p: p["score"], reverse=True)
+medals = {0: "🥇", 1: "🥈", 2: "🥉"}
+
+for rank, p in enumerate(players_sorted):
+    badge = medals.get(rank, f"#{rank + 1}")
+    with st.expander(f'{badge} **{p["name"]}** — {p["score"]} pts'):
+        if not p["answers"]:
+            st.caption("No per-question detail was recorded for this session.")
+            continue
+        rows = [
+            {
+                "Question": a["question"],
+                "Your answer": a["your_answer"] or "(no answer)",
+                "Correct answer": a["correct_answer"],
+                "Result": "✅ Correct" if a["correct"] else "❌ Wrong",
+                "Points": a["points"],
+            }
+            for a in p["answers"]
+        ]
+        st.dataframe(rows, use_container_width=True, hide_index=True)
+
+st.divider()
 st.caption(
     "Resets on every redeploy/reboot, same as the games-hosted counter — this is "
     "results since the app last restarted, not a permanent historical record."
