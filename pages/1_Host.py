@@ -76,12 +76,16 @@ if "host_game_code" not in st.session_state:
             "Players each pick a category after they join. You lock it in once "
             "everyone's voted, then start the game."
         )
-        cols = st.columns(len(category_keys))
-        for col, key in zip(cols, category_keys):
-            meta = bank[key]
-            with col:
-                st.write(f'{meta["icon"]} **{meta["label"]}**')
-                st.caption(f'{len(meta["questions"])} questions')
+        PER_ROW = 5
+        for row_start in range(0, len(category_keys), PER_ROW):
+            row_keys = category_keys[row_start : row_start + PER_ROW]
+            cols = st.columns(PER_ROW)
+            for col, key in zip(cols, row_keys):
+                meta = bank[key]
+                with col:
+                    with st.container(border=True):
+                        st.write(f'{meta["icon"]} **{meta["label"]}**')
+                        st.caption(f'{len(meta["questions"])} questions')
         if st.button("Create new game", type="primary"):
             code = store.create_game(VOTE, bank)
             st.session_state["host_game_code"] = code
