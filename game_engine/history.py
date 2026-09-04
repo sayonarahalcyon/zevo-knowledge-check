@@ -50,6 +50,11 @@ get_all_sessions() understands both shapes and groups old flat rows that
 share the same (code, played_at) back into a single legacy session, so
 results recorded before this change aren't lost - they just show up
 without a per-question breakdown.
+
+Solo plays (see record_solo_result / get_all_solo_plays near the bottom)
+are stored separately from all of the above, in their own tempfile - a
+solo play has no join code or other players, so it doesn't fit the
+session shape and isn't mirrored to the Google Sheet.
 """
 
 import json
@@ -61,6 +66,7 @@ from typing import Dict, List, Optional
 import streamlit as st
 
 _HISTORY_PATH = os.path.join(tempfile.gettempdir(), "zevo_kc_game_history.json")
+_SOLO_PATH = os.path.join(tempfile.gettempdir(), "zevo_kc_solo_history.json")
 
 _SHEET_HEADER = [
     "code", "category", "played_at", "player_name", "player_score",
@@ -69,6 +75,7 @@ _SHEET_HEADER = [
 
 _last_error: Optional[str] = None
 _last_sheet_error: Optional[str] = None
+_last_solo_error: Optional[str] = None
 
 
 # ---------------------------------------------------------------------
@@ -257,3 +264,66 @@ def get_debug_info() -> dict:
         info["writable_dir"] = f"check failed: {e}"
     info["sheet_configured"] = _sheet_configured()
     return info
+
+
+# ---------------------------------------------------------------------
+# Solo play history - separate from the multiplayer store above, since a
+# solo play has no join code or other players. Local tempfile only for
+# now (same "resets on redeploy/reboot" caveat as everything else here) -
+# not mirrored to the Google Sheet.
+# ---------------------------------------------------------------------
+
+def _read_solo() -> List[dict]:
+    global _last_solo_error
+    try:
+        with open(_SOLO_PATH, "r") as f:
+            data = json.load(f)
+        _last_solo_error = None
+        return data if isinstance(data, list) else []
+    except FileNotFoundError:
+        _last_solo_error = None  # normal before the first solo game finishes
+        return []
+    except Exception as e:  # noqa: BLE001 - deliberately broad for diagnostics
+        _last_solo_error = f"read failed ({type(e).__name__}): {e}"
+        return []
+
+
+def _write_solo(records: List[dict]) -> None:
+    global _last_solo_error
+    tmp_path = _SOLO_PATH + ".tmp"
+    try:
+        with open(tmp_path, "w") as f:
+            json.dump(records, f)
+        os.replace(tmp_path, _SOLO_PATH)
+        _last_solo_error = None
+    except Exception as e:  # noqa: BLE001 - deliberately broad; never break the app
+        _last_solo_error = f"write failed ({type(e).__name__}): {e}"
+
+
+def record_solo_result(name: str, category_label: Optional[str], score: int, answers: List[Dict]) -> None:
+    """Record one finished solo play.
+
+    answers: list of {"question", "your_answer" (None if unanswered),
+    "correct_answer", "correct" (bool), "points"}, one per question.
+    """
+    records = _read_solo()
+    records.append(
+        {
+            "name": name,
+            "category": category_label,
+            "played_at": time.time(),
+            "score": score,
+            "answers": answers,
+        }
+    )
+    _write_solo(records)
+
+
+def get_all_solo_plays() -> List[dict]:
+    """Every finished solo play, newest first."""
+    return sorted(_read_solo(), key=lambda r: r.get("played_at", 0), reverse=True)
+
+
+def get_last_solo_error() -> Optional[str]:
+    """For diagnostics: the last read/write problem hit for solo history."""
+    return _last_solo_error
