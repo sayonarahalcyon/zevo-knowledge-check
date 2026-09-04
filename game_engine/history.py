@@ -1,133 +1,182 @@
 """Persisted history of finished games, for the admin drill-down view.
 
-Same storage caveat as game_engine/stats.py: this lives in the system temp
-directory, not the repo, so it resets whenever the app redeploys or reboots.
-It's "results since last deploy", not permanent historical analytics.
+Unlike game_engine/stats.py's games-hosted counter, this is backed by a
+Google Sheet rather than a local tempfile, specifically so it SURVIVES
+redeploys and reboots — a plain code push used to silently wipe every
+recorded session, which is the problem this file exists to fix.
 
-Each finished game is stored as ONE session record:
-    {
-        "code": "YPAK",
-        "category": "Vehicle",
-        "played_at": 1730598900.123,
-        "players": [
-            {
-                "name": "Faith",
-                "score": 3994,
-                "answers": [
-                    {"question": "...", "your_answer": "...", "correct_answer": "...",
-                     "correct": True, "points": 800},
-                    ...
-                ],
-            },
-            ...
-        ],
-    }
+Sheet layout (one row per player, per question, per finished game):
+    code | category | played_at | player_name | player_score | question |
+    your_answer | correct_answer | result | points
 
-so the Admin page can drill from a session, to a player, to that player's
-question-by-question right/wrong breakdown.
+"result" is the literal string "Correct" or "Wrong" (kept human-readable
+for anyone opening the sheet directly). "played_at" is a display string
+("Sep 04, 2026 02:13 AM"), not a timestamp — rows are always appended in
+chronological order, so grouping preserves that order and we simply
+reverse it for "newest first".
 
-An earlier version of this file stored one FLAT record per player (no
-"players" key, no per-question "answers") instead of one record per game.
-get_all_sessions() understands both shapes and groups old flat rows that
-share the same (code, played_at) back into a single legacy session, so
-results recorded before this change aren't lost - they just show up
-without a per-question breakdown.
+Requires two Streamlit secrets (Settings -> Secrets on Streamlit Community
+Cloud):
+    history_sheet_id = "<the spreadsheet ID from its URL>"
+    [gcp_service_account]
+    type = "service_account"
+    ... (the rest of the service-account JSON key, as a TOML table)
+
+The service account's client_email must be shared on the sheet as an
+Editor, or writes will fail with a permission error.
+
+If those secrets aren't set (e.g. local dev), every function below fails
+soft: writes are silently dropped and reads return an empty list, with the
+problem surfaced via get_last_error()/get_debug_info() same as before.
 """
 
-import json
-import os
-import tempfile
 import time
 from typing import Dict, List, Optional
 
-_HISTORY_PATH = os.path.join(tempfile.gettempdir(), "zevo_kc_game_history.json")
+import streamlit as st
+
+_SHEET_HEADER = [
+    "code", "category", "played_at", "player_name", "player_score",
+    "question", "your_answer", "correct_answer", "result", "points",
+]
 
 _last_error: Optional[str] = None
 
 
-def _read_all() -> List[dict]:
-    global _last_error
+def _configured() -> bool:
     try:
-        with open(_HISTORY_PATH, "r") as f:
-            data = json.load(f)
-        _last_error = None
-        return data if isinstance(data, list) else []
-    except FileNotFoundError:
-        _last_error = None  # normal before the first game finishes
-        return []
-    except Exception as e:  # noqa: BLE001 - deliberately broad for diagnostics
-        _last_error = f"read failed ({type(e).__name__}): {e}"
-        return []
+        return bool(st.secrets.get("history_sheet_id")) and "gcp_service_account" in st.secrets
+    except Exception:
+        return False
 
 
-def _write_all(records: List[dict]) -> None:
-    global _last_error
-    tmp_path = _HISTORY_PATH + ".tmp"
-    try:
-        with open(tmp_path, "w") as f:
-            json.dump(records, f)
-        os.replace(tmp_path, _HISTORY_PATH)
-        _last_error = None
-    except Exception as e:  # noqa: BLE001 - deliberately broad; never break the app
-        _last_error = f"write failed ({type(e).__name__}): {e}"
+@st.cache_resource(show_spinner=False)
+def _worksheet():
+    """The single worksheet (tab) we read/write, authorized once per process."""
+    import gspread
+    from google.oauth2.service_account import Credentials
+
+    scopes = [
+        "https://www.googleapis.com/auth/spreadsheets",
+        "https://www.googleapis.com/auth/drive.file",
+    ]
+    creds = Credentials.from_service_account_info(dict(st.secrets["gcp_service_account"]), scopes=scopes)
+    client = gspread.authorize(creds)
+    sheet = client.open_by_key(st.secrets["history_sheet_id"])
+    return sheet.sheet1
 
 
 def record_game_result(code: str, category_label: Optional[str], players: List[Dict]) -> None:
-    """Append one session record for a game that just finished.
+    """Append rows for a game that just finished: one row per player per question.
 
     players: list of {"name": str, "score": int, "answers": [ {...}, ... ]},
     where each answer dict has "question", "your_answer" (None if unanswered),
     "correct_answer", "correct" (bool), and "points".
     """
-    records = _read_all()
-    records.append(
-        {
-            "code": code,
-            "category": category_label,
-            "played_at": time.time(),
-            "players": players,
-        }
-    )
-    _write_all(records)
+    global _last_error
+    if not _configured():
+        _last_error = "Google Sheet not configured (missing history_sheet_id / gcp_service_account secrets)"
+        return
+
+    played_at = time.strftime("%b %d, %Y %I:%M %p")
+    rows = []
+    for p in players:
+        for a in p.get("answers", []):
+            rows.append([
+                code,
+                category_label or "",
+                played_at,
+                p.get("name", ""),
+                p.get("score", 0),
+                a.get("question", ""),
+                a.get("your_answer") or "(no answer)",
+                a.get("correct_answer", ""),
+                "Correct" if a.get("correct") else "Wrong",
+                a.get("points", 0),
+            ])
+
+    if not rows:
+        return
+
+    try:
+        _worksheet().append_rows(rows, value_input_option="RAW")
+        _last_error = None
+    except Exception as e:  # noqa: BLE001 - never let a sheet hiccup break the game
+        _last_error = f"write failed ({type(e).__name__}): {e}"
 
 
 def get_all_sessions() -> List[dict]:
-    """Every finished game, newest first, normalized to the session shape.
+    """Every finished game, newest first, grouped session -> player -> answers."""
+    global _last_error
+    if not _configured():
+        _last_error = "Google Sheet not configured (missing history_sheet_id / gcp_service_account secrets)"
+        return []
 
-    Handles both current session-shaped records and legacy flat per-player
-    records (grouped back into a pseudo-session by matching code+played_at;
-    those players simply have an empty "answers" list since the old format
-    never recorded per-question detail).
-    """
+    try:
+        records = _read_records()
+        _last_error = None
+    except Exception as e:  # noqa: BLE001
+        _last_error = f"read failed ({type(e).__name__}): {e}"
+        return []
+
     sessions_by_key: Dict[tuple, dict] = {}
     order: List[tuple] = []
 
-    for rec in _read_all():
-        key = (rec.get("code"), rec.get("played_at"))
-        if "players" in rec:
-            sessions_by_key[key] = rec
-            if key not in order:
-                order.append(key)
-            continue
-
-        # Legacy flat per-player record - group by (code, played_at).
-        session = sessions_by_key.get(key)
-        if session is None:
-            session = {
-                "code": rec.get("code"),
-                "category": rec.get("category"),
-                "played_at": rec.get("played_at"),
-                "players": [],
-                "legacy": True,
+    for row in records:
+        code = row.get("code")
+        played_at = row.get("played_at")
+        session_key = (code, played_at)
+        if session_key not in sessions_by_key:
+            sessions_by_key[session_key] = {
+                "code": code,
+                "category": row.get("category"),
+                "played_at": played_at,
+                "players": {},
+                "player_order": [],
             }
-            sessions_by_key[key] = session
-            order.append(key)
-        session["players"].append(
-            {"name": rec.get("name"), "score": rec.get("score", 0), "answers": []}
-        )
+            order.append(session_key)
+        session = sessions_by_key[session_key]
 
-    sessions = [sessions_by_key[k] for k in order]
-    return sorted(sessions, key=lambda s: s.get("played_at", 0), reverse=True)
+        player_name = row.get("player_name")
+        if player_name not in session["players"]:
+            session["players"][player_name] = {
+                "name": player_name,
+                "score": _to_int(row.get("player_score")),
+                "answers": [],
+            }
+            session["player_order"].append(player_name)
+        session["players"][player_name]["answers"].append({
+            "question": row.get("question"),
+            "your_answer": row.get("your_answer"),
+            "correct_answer": row.get("correct_answer"),
+            "correct": row.get("result") == "Correct",
+            "points": _to_int(row.get("points")),
+        })
+
+    sessions = []
+    for key in reversed(order):  # newest first (rows are appended chronologically)
+        s = sessions_by_key[key]
+        sessions.append({
+            "code": s["code"],
+            "category": s["category"],
+            "played_at": s["played_at"],
+            "players": [s["players"][name] for name in s["player_order"]],
+        })
+    return sessions
+
+
+@st.cache_data(ttl=15, show_spinner=False)
+def _read_records() -> List[dict]:
+    """Raw sheet rows as dicts, cached briefly so a busy Admin page doesn't
+    hammer the Sheets API on every rerun."""
+    return _worksheet().get_all_records(expected_headers=_SHEET_HEADER)
+
+
+def _to_int(value) -> int:
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        return 0
 
 
 def get_last_error() -> Optional[str]:
@@ -136,10 +185,12 @@ def get_last_error() -> Optional[str]:
 
 
 def get_debug_info() -> dict:
-    """For diagnostics: where the history file lives and what's on disk right now."""
-    info = {"path": _HISTORY_PATH, "exists": os.path.exists(_HISTORY_PATH)}
-    try:
-        info["writable_dir"] = os.access(os.path.dirname(_HISTORY_PATH), os.W_OK)
-    except Exception as e:  # noqa: BLE001
-        info["writable_dir"] = f"check failed: {e}"
+    """For diagnostics: whether the sheet is configured and reachable."""
+    info = {"configured": _configured()}
+    if info["configured"]:
+        try:
+            info["sheet_title"] = _worksheet().spreadsheet.title
+            info["row_count"] = _worksheet().row_count
+        except Exception as e:  # noqa: BLE001
+            info["connection_error"] = f"{type(e).__name__}: {e}"
     return info
