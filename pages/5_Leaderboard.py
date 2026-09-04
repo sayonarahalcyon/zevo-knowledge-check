@@ -71,6 +71,12 @@ st.caption(
     "last restarted, not a permanent historical record."
 )
 
+sheet_error = history.get_last_solo_sheet_error()
+if sheet_error:
+    st.caption(f"📄 Google Sheet mirror: ⚠️ {sheet_error}")
+else:
+    st.caption("📄 Every solo play above is also mirrored to a Google Sheet (\"Solo Plays\" tab), so it survives redeploys too.")
+
 error = history.get_last_solo_error()
 if error:
     st.caption(f"⚠️ {error}")
