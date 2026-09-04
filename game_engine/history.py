@@ -54,7 +54,13 @@ without a per-question breakdown.
 Solo plays (see record_solo_result / get_all_solo_plays near the bottom)
 are stored separately from all of the above, in their own tempfile - a
 solo play has no join code or other players, so it doesn't fit the
-session shape and isn't mirrored to the Google Sheet.
+session shape. Solo plays ARE also mirrored to the same Google Sheet,
+but on their own "Solo Plays" tab (created automatically the first time
+a solo play is recorded, if it doesn't exist yet) rather than the
+multiplayer tab, since the row shape is different (a player name instead
+of a join code, no other players). Uses the same two secrets as the
+multiplayer mirror above; failures are available via
+get_last_solo_sheet_error() and never block the Leaderboard page.
 """
 
 import json
@@ -73,9 +79,15 @@ _SHEET_HEADER = [
     "question", "your_answer", "correct_answer", "result", "points",
 ]
 
+_SOLO_SHEET_HEADER = [
+    "name", "category", "played_at", "score",
+    "question", "your_answer", "correct_answer", "result", "points",
+]
+
 _last_error: Optional[str] = None
 _last_sheet_error: Optional[str] = None
 _last_solo_error: Optional[str] = None
+_last_solo_sheet_error: Optional[str] = None
 
 
 # ---------------------------------------------------------------------
@@ -171,6 +183,66 @@ def _sync_to_sheet(code: str, category_label: Optional[str], played_at: float, p
         _last_sheet_error = None
     except Exception as e:  # noqa: BLE001 - a sheet hiccup must never break the game
         _last_sheet_error = f"Google Sheet sync failed ({type(e).__name__}): {e}"
+
+
+@st.cache_resource(show_spinner=False)
+def _solo_worksheet():
+    """The "Solo Plays" tab of the same spreadsheet used for multiplayer
+    history. Created automatically (with a header row) the first time a
+    solo play is recorded, if it doesn't already exist."""
+    import gspread
+    from google.oauth2.service_account import Credentials
+
+    scopes = [
+        "https://www.googleapis.com/auth/spreadsheets",
+        "https://www.googleapis.com/auth/drive.file",
+    ]
+    creds = Credentials.from_service_account_info(dict(st.secrets["gcp_service_account"]), scopes=scopes)
+    client = gspread.authorize(creds)
+    sheet = client.open_by_key(st.secrets["history_sheet_id"])
+    try:
+        return sheet.worksheet("Solo Plays")
+    except gspread.exceptions.WorksheetNotFound:
+        ws = sheet.add_worksheet(title="Solo Plays", rows=1000, cols=len(_SOLO_SHEET_HEADER))
+        ws.append_row(_SOLO_SHEET_HEADER, value_input_option="RAW")
+        return ws
+
+
+def _sync_solo_to_sheet(name: str, category_label: Optional[str], played_at: float, score: int, answers: List[Dict]) -> None:
+    """Best-effort mirror of one finished solo play to the "Solo Plays"
+    tab. Never raises - any failure is recorded via
+    get_last_solo_sheet_error() and the local tempfile write (the one the
+    Leaderboard page actually depends on) has already happened by the
+    time this runs."""
+    global _last_solo_sheet_error
+    if not _sheet_configured():
+        _last_solo_sheet_error = "Google Sheet not configured (missing history_sheet_id / gcp_service_account secrets)"
+        return
+
+    played_at_display = time.strftime("%b %d, %Y %I:%M %p", time.localtime(played_at))
+    rows = []
+    for a in answers:
+        rows.append([
+            name,
+            category_label or "",
+            played_at_display,
+            score,
+            a.get("question", ""),
+            a.get("your_answer") or "(no answer)",
+            a.get("correct_answer", ""),
+            "Correct" if a.get("correct") else "Wrong",
+            a.get("points", 0),
+        ])
+
+    if not rows:
+        _last_solo_sheet_error = None
+        return
+
+    try:
+        _solo_worksheet().append_rows(rows, value_input_option="RAW")
+        _last_solo_sheet_error = None
+    except Exception as e:  # noqa: BLE001 - a sheet hiccup must never break the game
+        _last_solo_sheet_error = f"Google Sheet sync failed ({type(e).__name__}): {e}"
 
 
 # ---------------------------------------------------------------------
@@ -306,17 +378,20 @@ def record_solo_result(name: str, category_label: Optional[str], score: int, ans
     answers: list of {"question", "your_answer" (None if unanswered),
     "correct_answer", "correct" (bool), "points"}, one per question.
     """
+    played_at = time.time()
     records = _read_solo()
     records.append(
         {
             "name": name,
             "category": category_label,
-            "played_at": time.time(),
+            "played_at": played_at,
             "score": score,
             "answers": answers,
         }
     )
     _write_solo(records)
+
+    _sync_solo_to_sheet(name, category_label, played_at, score, answers)
 
 
 def get_all_solo_plays() -> List[dict]:
@@ -327,3 +402,11 @@ def get_all_solo_plays() -> List[dict]:
 def get_last_solo_error() -> Optional[str]:
     """For diagnostics: the last read/write problem hit for solo history."""
     return _last_solo_error
+
+
+def get_last_solo_sheet_error() -> Optional[str]:
+    """For diagnostics: the last Google Sheet sync problem hit for solo
+    plays, if any (including simply not being configured yet). This never
+    affects what the Leaderboard page shows - it's purely about the
+    durable "Solo Plays" tab mirror."""
+    return _last_solo_sheet_error
