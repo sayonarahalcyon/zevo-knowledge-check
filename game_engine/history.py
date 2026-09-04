@@ -326,6 +326,32 @@ def get_last_sheet_error() -> Optional[str]:
     return _last_sheet_error
 
 
+def check_sheet_connection() -> str:
+    """On-demand LIVE check of the Google Sheet mirror - actually tries to
+    open the spreadsheet and list its tabs right now, rather than reporting
+    a possibly-stale get_last_*_error() value (those only update the next
+    time a game/solo play finishes, so "no error yet" can just mean nothing
+    has tried since the app last restarted). Never raises; always returns a
+    plain-language result string."""
+    if not _sheet_configured():
+        return "Not configured: missing history_sheet_id / gcp_service_account secret(s)."
+    try:
+        import gspread
+        from google.oauth2.service_account import Credentials
+
+        scopes = [
+            "https://www.googleapis.com/auth/spreadsheets",
+            "https://www.googleapis.com/auth/drive.file",
+        ]
+        creds = Credentials.from_service_account_info(dict(st.secrets["gcp_service_account"]), scopes=scopes)
+        client = gspread.authorize(creds)
+        sheet = client.open_by_key(st.secrets["history_sheet_id"])
+        tabs = [ws.title for ws in sheet.worksheets()]
+        return f'Connected OK to "{sheet.title}". Tabs: {", ".join(tabs) or "(none)"}.'
+    except Exception as e:  # noqa: BLE001 - surfacing the real error is the whole point here
+        return f"Connection failed ({type(e).__name__}): {e}"
+
+
 def get_debug_info() -> dict:
     """For diagnostics: where the history file lives, what's on disk right
     now, and whether the Google Sheet mirror is configured."""
