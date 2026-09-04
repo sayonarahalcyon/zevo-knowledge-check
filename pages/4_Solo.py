@@ -1,11 +1,11 @@
 """Solo practice mode: one player, no host, no join code.
 
 Reuses the same question bank as the group game, but untimed: no countdown,
-no auto-reveal, full points (game_engine.state's MAX_POINTS) for every
-correct answer. All state lives in this browser tab's st.session_state
-instead of the shared GameStore, since there's no one else to sync with.
-Each finished play is recorded via history.record_solo_result() so it shows
-up on the Leaderboard page.
+no auto-reveal, flat points (game_engine.state's POINTS_PER_CORRECT) for
+every correct answer. All state lives in this browser tab's
+st.session_state instead of the shared GameStore, since there's no one else
+to sync with. Each finished play is recorded via history.record_solo_result()
+so it shows up on the Leaderboard page.
 """
 
 import time
@@ -14,7 +14,7 @@ import streamlit as st
 
 from game_engine import history
 from game_engine.questions import load_category_bank
-from game_engine.state import MAX_POINTS
+from game_engine.state import POINTS_PER_CORRECT
 from theme import page, banner, render_category_badge
 
 page("Solo", "🧑‍🎓")
@@ -81,7 +81,7 @@ if stage == "question":
             btn_label = f"{shapes[i]} {chr(65 + i)}. {opt}"
             if col.button(btn_label, key=f"opt_{i}", use_container_width=True, wrap=True):
                 correct = i == q["correct_index"]
-                points = MAX_POINTS if correct else 0
+                points = POINTS_PER_CORRECT if correct else 0
                 st.session_state["solo_answers"].append(
                     {
                         "choice_index": i,
