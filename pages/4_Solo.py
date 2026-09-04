@@ -1,33 +1,32 @@
 """Solo practice mode: one player, no host, no join code.
 
-Reuses the same question bank, timer, and speed-based scoring as the group
-game (game_engine.state's MIN_POINTS/MAX_POINTS/DEFAULT_DURATION), but all
-state lives in this browser tab's st.session_state instead of the shared
-GameStore, since there's no one else to sync with. Each finished play is
-recorded via history.record_solo_result() so it shows up on the Leaderboard
-page.
+Reuses the same question bank as the group game, but untimed: no countdown,
+no auto-reveal, full points (game_engine.state's MAX_POINTS) for every
+correct answer. All state lives in this browser tab's st.session_state
+instead of the shared GameStore, since there's no one else to sync with.
+Each finished play is recorded via history.record_solo_result() so it shows
+up on the Leaderboard page.
 """
 
 import time
 
 import streamlit as st
-from streamlit_autorefresh import st_autorefresh
 
 from game_engine import history
 from game_engine.questions import load_category_bank
-from game_engine.state import DEFAULT_DURATION, MIN_POINTS, MAX_POINTS
+from game_engine.state import MAX_POINTS
 from theme import page, banner, render_category_badge
 
 page("Solo", "🧑‍🎓")
-banner("🧑‍🎓", "Solo practice — play a category on your own, against the clock")
+banner("🧑‍🎓", "Solo practice — play a category on your own, at your own pace")
 
 stage = st.session_state.get("solo_stage", "setup")
 
 # ------------------------------------------------------------------- SETUP
 if stage == "setup":
     st.write(
-        "Same questions and scoring as the group game, minus the host — just "
-        "you, a category, and the clock."
+        "Same questions as the group game, minus the host and the clock — "
+        "just you and a category, at your own pace."
     )
     try:
         bank = load_category_bank()
@@ -64,31 +63,17 @@ questions = st.session_state["solo_questions"]
 index = st.session_state["solo_index"]
 total = len(questions)
 q = questions[index]
-duration = int(q.get("duration", DEFAULT_DURATION))
 icon = st.session_state["solo_category_icon"]
 label = st.session_state["solo_category_label"]
 
 # ----------------------------------------------------------------- QUESTION
 if stage == "question":
-    st_autorefresh(interval=1000, key="solo_question_refresh")
-
-    elapsed = time.time() - st.session_state["solo_started_at"]
-    is_time_up = elapsed >= duration
-
     with st.container(border=True):
         st.caption(f"Question {index + 1} of {total}")
         render_category_badge(icon, label)
         st.header(q["question"])
 
-        if is_time_up:
-            st.session_state["solo_answers"].append(
-                {"choice_index": None, "correct": False, "points": 0, "seconds_taken": duration}
-            )
-            st.session_state["solo_stage"] = "reveal"
-            st.rerun()
-
-        remaining = max(0, int(duration - elapsed) + 1)
-        st.metric("Time remaining", f"{remaining}s")
+        st.caption("Take your time — no clock here.")
         shapes = ["▲", "◆", "●", "■"]
         cols = st.columns(2)
         for i, opt in enumerate(q["options"]):
@@ -96,17 +81,13 @@ if stage == "question":
             btn_label = f"{shapes[i]} {chr(65 + i)}. {opt}"
             if col.button(btn_label, key=f"opt_{i}", use_container_width=True, wrap=True):
                 correct = i == q["correct_index"]
-                if correct:
-                    fraction_left = max(0.0, (duration - elapsed) / duration)
-                    points = int(MIN_POINTS + (MAX_POINTS - MIN_POINTS) * fraction_left)
-                else:
-                    points = 0
+                points = MAX_POINTS if correct else 0
                 st.session_state["solo_answers"].append(
                     {
                         "choice_index": i,
                         "correct": correct,
                         "points": points,
-                        "seconds_taken": round(elapsed, 1),
+                        "seconds_taken": round(time.time() - st.session_state["solo_started_at"], 1),
                     }
                 )
                 st.session_state["solo_stage"] = "reveal"
@@ -125,8 +106,6 @@ elif stage == "reveal":
 
         if result["correct"]:
             st.success(f"✅ Correct! +{result['points']} points")
-        elif result["choice_index"] is None:
-            st.warning(f"Time's up — no answer submitted. Correct answer: {correct_letter}. {correct_text}")
         else:
             st.error(f"❌ Not quite. Correct answer: {correct_letter}. {correct_text}")
 
