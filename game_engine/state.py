@@ -281,11 +281,24 @@ class GameStore:
                 return
             if game.current_index + 1 >= len(game.questions):
                 game.phase = FINISHED
-                history.record_game_result(
-                    code,
-                    game.category_label,
-                    [{"name": p.name, "score": p.score} for p in game.players.values()],
-                )
+                players_payload = []
+                for p in game.players.values():
+                    answers = []
+                    for i, q in enumerate(game.questions):
+                        a = p.answers.get(i)
+                        answers.append(
+                            {
+                                "question": q["question"],
+                                "correct_answer": q["options"][q["correct_index"]],
+                                "your_answer": q["options"][a.choice_index] if a else None,
+                                "correct": bool(a.correct) if a else False,
+                                "points": a.points if a else 0,
+                            }
+                        )
+                    players_payload.append(
+                        {"name": p.name, "score": p.score, "answers": answers}
+                    )
+                history.record_game_result(code, game.category_label, players_payload)
             else:
                 game.current_index += 1
                 game.phase = QUESTION
