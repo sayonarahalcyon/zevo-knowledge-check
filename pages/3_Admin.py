@@ -201,6 +201,9 @@ if sheet_error:
 else:
     st.caption("📄 Every game above is also mirrored to a Google Sheet, so it survives redeploys too.")
 
+if st.button("🔄 Test Google Sheet connection now"):
+    st.caption(history.check_sheet_connection())
+
 error = history.get_last_error()
 if error:
     st.caption(f"⚠️ {error}")
