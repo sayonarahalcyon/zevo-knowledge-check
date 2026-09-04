@@ -1,4 +1,6 @@
 import datetime
+import json
+import re
 
 import streamlit as st
 
@@ -36,6 +38,93 @@ if not ADMIN_PASSWORD:
         "Set `admin_password` in the app's Settings → Secrets panel on Streamlit "
         "Community Cloud to lock it down."
     )
+
+
+# ---------------------------------------------------------------------
+# Restore sessions from a backup file - for when a redeploy/reboot wiped
+# the local tempfile before those sessions made it into the Google Sheet
+# mirror (or before the Sheet was even set up). Only touches the local
+# list below; never re-syncs to the Sheet, since a backup like this was
+# usually taken FROM a Sheet-seeded snapshot in the first place and
+# re-syncing would just duplicate rows there.
+# ---------------------------------------------------------------------
+
+def _restore_from_backup(uploaded_file) -> tuple[int, int]:
+    try:
+        data = json.load(uploaded_file)
+    except Exception:
+        st.error("That file isn't valid JSON.")
+        return 0, 0
+
+    backup_sessions = data.get("sessions", []) if isinstance(data, dict) else []
+    if not backup_sessions:
+        st.warning("That file doesn't look like a session backup (no \"sessions\" list found).")
+        return 0, 0
+
+    existing = history._read_all()
+    existing_keys = {(r.get("code"), r.get("played_at")) for r in existing if "players" in r}
+
+    restored = 0
+    skipped = 0
+    for sess in backup_sessions:
+        clean_players = []
+        for p in sess.get("players", []):
+            answers = p.get("answers")
+            if not isinstance(answers, list):
+                continue  # e.g. a test session's answers stored as a plain string - not restorable
+            # Strip a "(N pts)" tally that may have been appended to the name
+            # for readability in a downloaded copy of this file.
+            name = re.sub(r"\s*\(\d+ pts\)\s*$", "", str(p.get("name", ""))).strip()
+            clean_players.append({"name": name, "score": p.get("score", 0), "answers": answers})
+
+        if not clean_players:
+            continue  # nothing restorable in this session
+
+        try:
+            played_at = datetime.datetime.strptime(
+                sess.get("played_at_display", ""), "%b %d, %Y %I:%M %p"
+            ).timestamp()
+        except (TypeError, ValueError):
+            played_at = None
+
+        key = (sess.get("code"), played_at)
+        if played_at is not None and key in existing_keys:
+            skipped += 1
+            continue
+
+        existing.append(
+            {
+                "code": sess.get("code"),
+                "category": sess.get("category"),
+                "played_at": played_at if played_at is not None else 0,
+                "players": clean_players,
+            }
+        )
+        existing_keys.add(key)
+        restored += 1
+
+    if restored:
+        history._write_all(existing)
+    return restored, skipped
+
+
+with st.expander("🩹 Restore sessions from a backup file", expanded=not history.get_all_sessions()):
+    st.caption(
+        "If a game finished but got wiped from the list below by a later "
+        "redeploy/reboot (before it reached the Google Sheet mirror, or before "
+        "the Sheet was set up), upload a backup JSON here to add it back. This "
+        "only affects the list on this page - it never re-syncs to the Sheet."
+    )
+    backup_file = st.file_uploader("Backup JSON", type="json", key="restore_backup_upload")
+    if st.button("Restore from this file", disabled=backup_file is None):
+        restored, skipped = _restore_from_backup(backup_file)
+        if restored:
+            st.success(f"Restored {restored} session(s). Refreshing…")
+            st.rerun()
+        elif skipped:
+            st.info("Nothing new to restore - those sessions are already in the list below.")
+        else:
+            st.warning("No valid sessions found in that file.")
 
 sessions = history.get_all_sessions()
 
