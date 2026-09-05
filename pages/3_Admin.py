@@ -148,8 +148,14 @@ if not solo_plays:
     solo_error = history.get_last_solo_error()
     if solo_error:
         st.error(f"Solo history isn't loading: {solo_error}")
+    elif history._sheet_configured():
+        st.caption("No solo games played yet.")
     else:
-        st.caption("No solo games played yet since the app's last deploy/reboot.")
+        st.caption(
+            "No solo games played yet since the app's last deploy/reboot. "
+            "Set up the Google Sheet mirror (see the caption below once a play "
+            "exists) to keep solo history across redeploys/reboots."
+        )
 else:
     solo_by_player = defaultdict(list)
     for p in solo_plays:
@@ -213,7 +219,11 @@ else:
     if solo_sheet_error:
         st.caption(f"📄 Solo Sheet mirror: ⚠️ {solo_sheet_error}")
     else:
-        st.caption('📄 Every solo play above is also mirrored to a Google Sheet ("Solo Plays" tab).')
+        st.caption(
+            '📄 Every solo play above is also mirrored to a Google Sheet ("Solo Plays" '
+            "tab) - that's what keeps this list showing up across redeploys/reboots, "
+            "not just since the app last restarted."
+        )
 
     solo_error = history.get_last_solo_error()
     if solo_error:
@@ -227,6 +237,8 @@ if not sessions:
     error = history.get_last_error()
     if error:
         st.error(f"Session history isn't loading: {error}")
+    elif history._sheet_configured():
+        st.caption("No finished games yet.")
     else:
         st.caption("No finished games yet since the app's last deploy/reboot.")
     st.stop()
@@ -280,17 +292,20 @@ for rank, p in enumerate(players_sorted):
         st.dataframe(rows, use_container_width=True, hide_index=True)
 
 st.divider()
-st.caption(
-    "This list resets on every redeploy/reboot, same as the games-hosted "
-    "counter — it's results since the app last restarted, not a permanent "
-    "historical record."
-)
 
 sheet_error = history.get_last_sheet_error()
 if sheet_error:
     st.caption(f"📄 Google Sheet mirror: ⚠️ {sheet_error}")
+    st.caption(
+        "Until that's fixed, this list resets on every redeploy/reboot - it's "
+        "results since the app last restarted, not a permanent record."
+    )
 else:
-    st.caption("📄 Every game above is also mirrored to a Google Sheet, so it survives redeploys too.")
+    st.caption(
+        "📄 Every game above is also mirrored to a Google Sheet, and read back from "
+        "it here too - so this list survives redeploys/reboots, not just results "
+        "since the app last restarted."
+    )
 
 if st.button("🔄 Test Google Sheet connection now"):
     st.caption(history.check_sheet_connection())
