@@ -1,6 +1,7 @@
 import datetime
 import json
 import re
+from collections import defaultdict
 
 import streamlit as st
 
@@ -126,6 +127,79 @@ with st.expander("🩹 Restore sessions from a backup file", expanded=not histor
         else:
             st.warning("No valid sessions found in that file.")
 
+def _played_str(ts: float) -> str:
+    return datetime.datetime.fromtimestamp(ts).strftime("%b %d, %Y %I:%M %p")
+
+
+# ---------------------------------------------------------------------
+# Solo plays - same content as the standalone Leaderboard page, folded in
+# here too so admins don't have to leave this page to check it. Placed
+# before the multiplayer section below (which can st.stop() the rest of
+# the page when there are no multiplayer sessions yet), so this always
+# shows regardless of multiplayer history.
+# ---------------------------------------------------------------------
+
+st.divider()
+st.subheader("🧑‍🎓 Solo plays")
+
+solo_plays = history.get_all_solo_plays()
+
+if not solo_plays:
+    solo_error = history.get_last_solo_error()
+    if solo_error:
+        st.error(f"Solo history isn't loading: {solo_error}")
+    else:
+        st.caption("No solo games played yet since the app's last deploy/reboot.")
+else:
+    solo_by_player = defaultdict(list)
+    for p in solo_plays:
+        solo_by_player[p["name"]].append(p)
+
+    solo_summary_rows = [
+        {
+            "Player": name,
+            "Plays": len(rows),
+            "Best score": max(r["score"] for r in rows),
+            "Last played": _played_str(max(r["played_at"] for r in rows)),
+        }
+        for name, rows in solo_by_player.items()
+    ]
+    solo_summary_rows.sort(key=lambda r: r["Best score"], reverse=True)
+
+    st.caption(f"{len(solo_by_player)} player(s) · {len(solo_plays)} play(s) total")
+    st.dataframe(solo_summary_rows, use_container_width=True, hide_index=True)
+
+    solo_names = ["All players"] + sorted(solo_by_player.keys(), key=str.lower)
+    solo_choice = st.selectbox("Filter by player", options=solo_names, key="admin_solo_filter")
+    solo_filtered = solo_plays if solo_choice == "All players" else solo_by_player[solo_choice]
+
+    for p in solo_filtered:
+        header = f'{p["name"]} — {p["score"]} pts · {p.get("category") or "—"} · {_played_str(p["played_at"])}'
+        with st.expander(header):
+            rows = [
+                {
+                    "Question": a["question"],
+                    "Your answer": a["your_answer"] or "(no answer)",
+                    "Correct answer": a["correct_answer"],
+                    "Result": "✅ Correct" if a["correct"] else "❌ Wrong",
+                    "Points": a["points"],
+                }
+                for a in p["answers"]
+            ]
+            st.dataframe(rows, use_container_width=True, hide_index=True)
+
+    solo_sheet_error = history.get_last_solo_sheet_error()
+    if solo_sheet_error:
+        st.caption(f"📄 Solo Sheet mirror: ⚠️ {solo_sheet_error}")
+    else:
+        st.caption('📄 Every solo play above is also mirrored to a Google Sheet ("Solo Plays" tab).')
+
+    solo_error = history.get_last_solo_error()
+    if solo_error:
+        st.caption(f"⚠️ {solo_error}")
+
+st.divider()
+
 sessions = history.get_all_sessions()
 
 if not sessions:
@@ -135,10 +209,6 @@ if not sessions:
     else:
         st.caption("No finished games yet since the app's last deploy/reboot.")
     st.stop()
-
-
-def _played_str(ts: float) -> str:
-    return datetime.datetime.fromtimestamp(ts).strftime("%b %d, %Y %I:%M %p")
 
 
 def _session_label(s: dict) -> str:
