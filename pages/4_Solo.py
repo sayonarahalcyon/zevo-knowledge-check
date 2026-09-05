@@ -13,7 +13,7 @@ import time
 import streamlit as st
 
 from game_engine import history
-from game_engine.questions import load_category_bank
+from game_engine.questions import load_category_bank, add_mixed_category
 from game_engine.state import POINTS_PER_CORRECT
 from theme import page, banner, render_category_badge
 
@@ -29,7 +29,7 @@ if stage == "setup":
         "just you and a category, at your own pace."
     )
     try:
-        bank = load_category_bank()
+        bank = add_mixed_category(load_category_bank())
     except Exception as e:
         st.error(f"Couldn't load data/questions.json: {e}")
         st.stop()

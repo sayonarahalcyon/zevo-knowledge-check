@@ -11,7 +11,7 @@ from game_engine.state import (
     VOTE,
     ROULETTE,
 )
-from game_engine.questions import load_category_bank
+from game_engine.questions import load_category_bank, add_mixed_category
 from game_engine.roulette import pick_target, flash_category
 from theme import (
     page,
@@ -60,13 +60,15 @@ if "host_game_code" not in st.session_state:
 
     # ---- pick it myself ----
     if mode == HOST_PICK:
+        pick_bank = add_mixed_category(bank)
+        pick_keys = list(pick_bank.keys())
         choice_key = st.selectbox(
             "Category",
-            options=category_keys,
-            format_func=lambda k: f'{bank[k]["icon"]} {bank[k]["label"]} ({len(bank[k]["questions"])} questions)',
+            options=pick_keys,
+            format_func=lambda k: f'{pick_bank[k]["icon"]} {pick_bank[k]["label"]} ({len(pick_bank[k]["questions"])} questions)',
         )
         if st.button("Create new game", type="primary"):
-            code = store.create_game(HOST_PICK, bank, category_key=choice_key)
+            code = store.create_game(HOST_PICK, pick_bank, category_key=choice_key)
             st.session_state["host_game_code"] = code
             st.rerun()
 
