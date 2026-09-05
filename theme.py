@@ -4,7 +4,7 @@ import html
 
 import streamlit as st
 
-from game_engine.stats import get_games_created, get_last_error, get_debug_info
+from game_engine import history
 
 APP_NAME = "ZEVO Knowledge Check"
 TAGLINE = "Live, group knowledge checks for ZEVO coworking sessions"
@@ -217,6 +217,13 @@ def page(title_suffix: str, icon: str) -> None:
 def _render_sidebar_stats() -> None:
     """Games-hosted counter under the page nav in the left sidebar.
 
+    This is the same count as the "N session(s)" heading on the Admin page -
+    finished multiplayer games, merged from the local tempfile and the
+    durable Google Sheet mirror - so the two numbers always agree, including
+    right after a redeploy/reboot (they used to disagree: this counter was a
+    separate, purely local tally that reset to 0 on every redeploy/reboot
+    even when Admin still had sessions to show, restored from the Sheet).
+
     The count itself is a link (styled to look like a big metric value) to
     the Admin page, so clicking it jumps straight into the session/player/
     answer drill-down there.
@@ -227,14 +234,14 @@ def _render_sidebar_stats() -> None:
         with st.container(key="games_hosted_link"):
             st.page_link(
                 "pages/3_Admin.py",
-                label=str(get_games_created()),
+                label=str(len(history.get_all_sessions())),
             )
-        st.caption("Since last deploy — click the number to view sessions")
-        error = get_last_error()
+        st.caption("Finished games on record — click the number to view sessions")
+        error = history.get_last_error()
         if error:
             st.caption(f"⚠️ {error}")
         with st.expander("Debug", expanded=False):
-            st.json(get_debug_info())
+            st.json(history.get_debug_info())
 
 
 def banner(icon: str, subtitle: str | None = None) -> None:
