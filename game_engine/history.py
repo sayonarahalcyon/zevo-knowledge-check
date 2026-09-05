@@ -1,16 +1,20 @@
 """Persisted history of finished games, for the admin drill-down view.
 
-Two storage layers, on purpose:
+Two storage layers:
 
-1. A local tempfile (same as before) — this is what the Admin page reads
-   from, so it always shows results immediately, with no setup required.
-   Same caveat as game_engine/stats.py: it lives in the system temp
-   directory, not the repo, so it resets whenever the app redeploys or
-   reboots. It's "results since last deploy", not permanent history.
+1. A local tempfile (same as before) — fast, no setup required, but it
+   lives in the system temp directory rather than the repo, so it resets
+   whenever the app redeploys or reboots.
 
 2. A Google Sheet mirror — every finished game is ALSO appended there,
-   one row per player per question, so there's a copy that survives
-   redeploys/reboots even though the in-app view doesn't. This requires
+   one row per player per question, and this copy survives redeploys and
+   reboots. get_all_sessions() / get_all_solo_plays() now READ BACK from
+   this sheet and reconstruct sessions/plays from it, merging them with
+   whatever's in the local tempfile - so as long as the sheet is
+   configured, results keep showing up on the Admin/Leaderboard pages
+   across a redeploy or reboot, not just "since last deploy". If the
+   sheet isn't configured, everything falls back to the old local-only
+   behaviour automatically. This requires
    two Streamlit secrets that aren't set up by default (Settings ->
    Secrets on Streamlit Community Cloud):
        history_sheet_id = "<the spreadsheet ID from its URL>"
@@ -132,6 +136,17 @@ def _sheet_configured() -> bool:
         return False
 
 
+def _parse_played_at_display(s: str) -> float:
+    """Best-effort reverse of the "%b %d, %Y %I:%M %p" formatting used when
+    writing rows to the Sheet - only minute precision, since that's all the
+    Sheet stores, but good enough for sorting/display after a reboot wipes
+    the local tempfile's exact timestamp."""
+    try:
+        return time.mktime(time.strptime(s, "%b %d, %Y %I:%M %p"))
+    except Exception:
+        return 0.0
+
+
 @st.cache_resource(show_spinner=False)
 def _worksheet():
     import gspread
@@ -181,8 +196,83 @@ def _sync_to_sheet(code: str, category_label: Optional[str], played_at: float, p
     try:
         _worksheet().append_rows(rows, value_input_option="RAW")
         _last_sheet_error = None
+        _cached_sheet_sessions.clear()  # so the next read sees this game right away
     except Exception as e:  # noqa: BLE001 - a sheet hiccup must never break the game
         _last_sheet_error = f"Google Sheet sync failed ({type(e).__name__}): {e}"
+
+
+def _sheet_sessions_uncached() -> List[dict]:
+    """Reconstructs every finished multiplayer session from the raw rows on
+    the Google Sheet mirror (one row per player per question there). This is
+    what lets sessions recorded before the app's last redeploy/reboot still
+    show up on the Admin page, since the local tempfile they'd otherwise
+    live in gets wiped on every redeploy/reboot but the Sheet doesn't.
+    Best-effort: returns [] on any failure rather than raising."""
+    if not _sheet_configured():
+        return []
+    try:
+        values = _worksheet().get_all_values()
+    except Exception:
+        return []
+    if len(values) <= 1:
+        return []
+
+    width = len(_SHEET_HEADER)
+    sessions_by_key: Dict[tuple, dict] = {}
+    players_by_key: Dict[tuple, Dict[str, dict]] = {}
+    order: List[tuple] = []
+
+    for row in values[1:]:
+        row = (row + [""] * width)[:width]
+        code, category, played_at_display, player_name, player_score, question, your_answer, correct_answer, result, points = row
+        if not code:
+            continue
+
+        key = (code, played_at_display)
+        session = sessions_by_key.get(key)
+        if session is None:
+            session = {
+                "code": code,
+                "category": category or None,
+                "played_at": _parse_played_at_display(played_at_display),
+                "players": [],
+            }
+            sessions_by_key[key] = session
+            players_by_key[key] = {}
+            order.append(key)
+
+        players = players_by_key[key]
+        player = players.get(player_name)
+        if player is None:
+            try:
+                score = int(float(player_score)) if player_score else 0
+            except ValueError:
+                score = 0
+            player = {"name": player_name, "score": score, "answers": []}
+            players[player_name] = player
+            session["players"].append(player)
+
+        if question:
+            try:
+                pts = int(float(points)) if points else 0
+            except ValueError:
+                pts = 0
+            player["answers"].append(
+                {
+                    "question": question,
+                    "your_answer": None if your_answer == "(no answer)" else your_answer,
+                    "correct_answer": correct_answer,
+                    "correct": result == "Correct",
+                    "points": pts,
+                }
+            )
+
+    return [sessions_by_key[k] for k in order]
+
+
+@st.cache_data(ttl=20, show_spinner=False)
+def _cached_sheet_sessions() -> List[dict]:
+    return _sheet_sessions_uncached()
 
 
 @st.cache_resource(show_spinner=False)
@@ -241,8 +331,74 @@ def _sync_solo_to_sheet(name: str, category_label: Optional[str], played_at: flo
     try:
         _solo_worksheet().append_rows(rows, value_input_option="RAW")
         _last_solo_sheet_error = None
+        _cached_sheet_solo_plays.clear()  # so the next read sees this play right away
     except Exception as e:  # noqa: BLE001 - a sheet hiccup must never break the game
         _last_solo_sheet_error = f"Google Sheet sync failed ({type(e).__name__}): {e}"
+
+
+def _sheet_solo_plays_uncached() -> List[dict]:
+    """Reconstructs every finished solo play from the raw rows on the "Solo
+    Plays" tab (one row per question there). Same purpose as
+    _sheet_sessions_uncached() above, for solo plays: lets plays recorded
+    before the app's last redeploy/reboot still show up on the Leaderboard
+    and Admin pages. Best-effort: returns [] on any failure."""
+    if not _sheet_configured():
+        return []
+    try:
+        values = _solo_worksheet().get_all_values()
+    except Exception:
+        return []
+    if len(values) <= 1:
+        return []
+
+    width = len(_SOLO_SHEET_HEADER)
+    plays_by_key: Dict[tuple, dict] = {}
+    order: List[tuple] = []
+
+    for row in values[1:]:
+        row = (row + [""] * width)[:width]
+        name, category, played_at_display, score, question, your_answer, correct_answer, result, points = row
+        if not name:
+            continue
+
+        key = (name, played_at_display)
+        play = plays_by_key.get(key)
+        if play is None:
+            try:
+                sc = int(float(score)) if score else 0
+            except ValueError:
+                sc = 0
+            play = {
+                "name": name,
+                "category": category or None,
+                "played_at": _parse_played_at_display(played_at_display),
+                "score": sc,
+                "answers": [],
+            }
+            plays_by_key[key] = play
+            order.append(key)
+
+        if question:
+            try:
+                pts = int(float(points)) if points else 0
+            except ValueError:
+                pts = 0
+            play["answers"].append(
+                {
+                    "question": question,
+                    "your_answer": None if your_answer == "(no answer)" else your_answer,
+                    "correct_answer": correct_answer,
+                    "correct": result == "Correct",
+                    "points": pts,
+                }
+            )
+
+    return [plays_by_key[k] for k in order]
+
+
+@st.cache_data(ttl=20, show_spinner=False)
+def _cached_sheet_solo_plays() -> List[dict]:
+    return _sheet_solo_plays_uncached()
 
 
 # ---------------------------------------------------------------------
@@ -273,8 +429,9 @@ def record_game_result(code: str, category_label: Optional[str], players: List[D
     _sync_to_sheet(code, category_label, played_at, players)
 
 
-def get_all_sessions() -> List[dict]:
-    """Every finished game, newest first, normalized to the session shape.
+def _local_sessions() -> List[dict]:
+    """Every finished game from the local tempfile only, normalized to the
+    session shape.
 
     Handles both current session-shaped records and legacy flat per-player
     records (grouped back into a pseudo-session by matching code+played_at;
@@ -308,7 +465,41 @@ def get_all_sessions() -> List[dict]:
             {"name": rec.get("name"), "score": rec.get("score", 0), "answers": []}
         )
 
-    sessions = [sessions_by_key[k] for k in order]
+    return [sessions_by_key[k] for k in order]
+
+
+def get_all_sessions() -> List[dict]:
+    """Every finished game, newest first, merged from the local tempfile
+    (fast, but wiped on redeploy/reboot) and the Google Sheet mirror
+    (slower, but durable) - so sessions keep showing up here across a
+    redeploy/reboot as long as the Sheet is configured. When it isn't
+    configured, this is exactly the old local-only behaviour.
+
+    A session is deduped between the two sources by (code, played_at
+    rounded to the minute) - the Sheet only stores minute-precision
+    timestamps, so that's the finest grain a match can be made at. The
+    local copy (exact timestamp, and never subject to the Sheet's text
+    parsing) wins when a session is in both.
+    """
+    sheet_sessions = _cached_sheet_sessions()
+    local_sessions = _local_sessions()
+
+    def _key(s: dict) -> tuple:
+        return (s.get("code"), round(s.get("played_at", 0) / 60.0))
+
+    merged: Dict[tuple, dict] = {}
+    order: List[tuple] = []
+    for s in sheet_sessions:
+        key = _key(s)
+        merged[key] = s
+        order.append(key)
+    for s in local_sessions:
+        key = _key(s)
+        if key not in merged:
+            order.append(key)
+        merged[key] = s
+
+    sessions = [merged[k] for k in order]
     return sorted(sessions, key=lambda s: s.get("played_at", 0), reverse=True)
 
 
@@ -421,8 +612,31 @@ def record_solo_result(name: str, category_label: Optional[str], score: int, ans
 
 
 def get_all_solo_plays() -> List[dict]:
-    """Every finished solo play, newest first."""
-    return sorted(_read_solo(), key=lambda r: r.get("played_at", 0), reverse=True)
+    """Every finished solo play, newest first, merged from the local
+    tempfile (fast, wiped on redeploy/reboot) and the Google Sheet's "Solo
+    Plays" tab (durable) - same reasoning as get_all_sessions() above.
+    Falls back to local-only when the Sheet isn't configured.
+    """
+    sheet_plays = _cached_sheet_solo_plays()
+    local_plays = _read_solo()
+
+    def _key(p: dict) -> tuple:
+        return (p.get("name"), round(p.get("played_at", 0) / 60.0))
+
+    merged: Dict[tuple, dict] = {}
+    order: List[tuple] = []
+    for p in sheet_plays:
+        key = _key(p)
+        merged[key] = p
+        order.append(key)
+    for p in local_plays:
+        key = _key(p)
+        if key not in merged:
+            order.append(key)
+        merged[key] = p
+
+    plays = [merged[k] for k in order]
+    return sorted(plays, key=lambda r: r.get("played_at", 0), reverse=True)
 
 
 def get_last_solo_error() -> Optional[str]:
@@ -477,6 +691,7 @@ def delete_solo_sheet_rows(names: List[str]) -> str:
         for row_num in sorted(rows_to_delete, reverse=True):
             ws.delete_rows(row_num)
         if rows_to_delete:
+            _cached_sheet_solo_plays.clear()
             return f"Removed {len(rows_to_delete)} row(s) from the Solo Plays tab."
         return "No matching rows found on the Solo Plays tab."
     except Exception as e:  # noqa: BLE001 - surfacing the real error is the whole point here
