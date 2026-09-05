@@ -436,3 +436,48 @@ def get_last_solo_sheet_error() -> Optional[str]:
     affects what the Leaderboard page shows - it's purely about the
     durable "Solo Plays" tab mirror."""
     return _last_solo_sheet_error
+
+
+def delete_solo_plays(names: List[str]) -> int:
+    """Remove every solo play for the given player name(s) from local
+    history (exact, case-sensitive match on name) - e.g. to clean up test
+    plays. Returns how many plays were removed. Does not touch the Google
+    Sheet mirror; see delete_solo_sheet_rows() for that."""
+    if not names:
+        return 0
+    name_set = set(names)
+    records = _read_solo()
+    kept = [r for r in records if r.get("name") not in name_set]
+    removed = len(records) - len(kept)
+    if removed:
+        _write_solo(kept)
+    return removed
+
+
+def delete_solo_sheet_rows(names: List[str]) -> str:
+    """Best-effort removal of every row on the "Solo Plays" tab whose name
+    column matches one of the given player name(s). Never raises; always
+    returns a plain-language result string."""
+    if not names:
+        return "No names given."
+    if not _sheet_configured():
+        return "Not configured: missing history_sheet_id / gcp_service_account secret(s)."
+    try:
+        ws = _solo_worksheet()
+        values = ws.get_all_values()
+        if not values:
+            return "Sheet is empty, nothing to remove."
+        name_set = set(names)
+        # Row 1 is the header; sheet rows are 1-indexed and line up with
+        # this full read, so row number = list index + 1.
+        rows_to_delete = [
+            i + 1 for i, row in enumerate(values)
+            if i > 0 and row and row[0] in name_set
+        ]
+        for row_num in sorted(rows_to_delete, reverse=True):
+            ws.delete_rows(row_num)
+        if rows_to_delete:
+            return f"Removed {len(rows_to_delete)} row(s) from the Solo Plays tab."
+        return "No matching rows found on the Solo Plays tab."
+    except Exception as e:  # noqa: BLE001 - surfacing the real error is the whole point here
+        return f"Sheet cleanup failed ({type(e).__name__}): {e}"
