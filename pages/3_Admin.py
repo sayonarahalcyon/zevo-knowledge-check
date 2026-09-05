@@ -189,6 +189,8 @@ else:
             st.dataframe(rows, use_container_width=True, hide_index=True)
 
     with st.expander("🗑️ Remove test / mistaken plays"):
+        if st.session_state.get("admin_solo_delete_result"):
+            st.success(st.session_state.pop("admin_solo_delete_result"))
         names_to_remove = st.multiselect(
             "Select player(s) to remove from the list above",
             options=sorted(solo_by_player.keys(), key=str.lower),
@@ -204,7 +206,7 @@ else:
             msg = f"Removed {removed} play(s) locally."
             if also_sheet:
                 msg += " " + history.delete_solo_sheet_rows(names_to_remove)
-            st.success(msg)
+            st.session_state["admin_solo_delete_result"] = msg
             st.rerun()
 
     solo_sheet_error = history.get_last_solo_sheet_error()
