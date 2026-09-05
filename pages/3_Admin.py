@@ -188,6 +188,25 @@ else:
             ]
             st.dataframe(rows, use_container_width=True, hide_index=True)
 
+    with st.expander("🗑️ Remove test / mistaken plays"):
+        names_to_remove = st.multiselect(
+            "Select player(s) to remove from the list above",
+            options=sorted(solo_by_player.keys(), key=str.lower),
+            key="admin_solo_delete_select",
+        )
+        also_sheet = st.checkbox(
+            "Also remove their rows from the Google Sheet's Solo Plays tab",
+            value=True,
+            key="admin_solo_delete_sheet",
+        )
+        if st.button("Delete selected", disabled=not names_to_remove):
+            removed = history.delete_solo_plays(names_to_remove)
+            msg = f"Removed {removed} play(s) locally."
+            if also_sheet:
+                msg += " " + history.delete_solo_sheet_rows(names_to_remove)
+            st.success(msg)
+            st.rerun()
+
     solo_sheet_error = history.get_last_solo_sheet_error()
     if solo_sheet_error:
         st.caption(f"📄 Solo Sheet mirror: ⚠️ {solo_sheet_error}")
