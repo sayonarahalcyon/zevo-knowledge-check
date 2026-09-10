@@ -4,7 +4,7 @@ import html
 
 import streamlit as st
 
-from game_engine import history
+from game_engine import health, history
 
 APP_NAME = "ZEVO Knowledge Check"
 TAGLINE = "Live, group knowledge checks for ZEVO coworking sessions"
@@ -210,6 +210,7 @@ def page(title_suffix: str, icon: str) -> None:
     """Call first thing on every page: sets the tab title/icon and shared styling."""
     full_title = f"{APP_NAME} — {title_suffix}" if title_suffix else APP_NAME
     st.set_page_config(page_title=full_title, page_icon=icon, layout="centered")
+    health.start_watchdog()
     _inject_css()
     _render_sidebar_stats()
 
