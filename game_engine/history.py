@@ -75,6 +75,8 @@ from typing import Dict, List, Optional
 
 import streamlit as st
 
+from game_engine import health
+
 _HISTORY_PATH = os.path.join(tempfile.gettempdir(), "zevo_kc_game_history.json")
 _SOLO_PATH = os.path.join(tempfile.gettempdir(), "zevo_kc_solo_history.json")
 
@@ -147,8 +149,21 @@ def _parse_played_at_display(s: str) -> float:
         return 0.0
 
 
-@st.cache_resource(show_spinner=False)
-def _worksheet():
+_SHEET_TIMEOUT_SECONDS = 10
+
+
+def _authorized_client():
+    """One gspread client, shared by the multiplayer and solo worksheet
+    getters below, with every HTTP call it makes bounded to
+    _SHEET_TIMEOUT_SECONDS (gspread's own set_timeout(), so this rides on
+    whatever the installed gspread version actually supports rather than
+    reaching into its internals). Without this, a slow or stuck response
+    from Google could hang the caller indefinitely - and since this used
+    to be called while state.py's GameStore lock was held, that could
+    freeze every game on the app, not just the one being recorded. See
+    state.py's next_question() for the other half of that fix (the lock
+    is released before this is ever called now); this timeout is the
+    belt-and-suspenders backstop in case some other caller doesn't."""
     import gspread
     from google.oauth2.service_account import Credentials
 
@@ -158,6 +173,13 @@ def _worksheet():
     ]
     creds = Credentials.from_service_account_info(dict(st.secrets["gcp_service_account"]), scopes=scopes)
     client = gspread.authorize(creds)
+    client.set_timeout(_SHEET_TIMEOUT_SECONDS)
+    return client
+
+
+@st.cache_resource(show_spinner=False)
+def _worksheet():
+    client = _authorized_client()
     sheet = client.open_by_key(st.secrets["history_sheet_id"])
     return sheet.sheet1
 
@@ -193,12 +215,15 @@ def _sync_to_sheet(code: str, category_label: Optional[str], played_at: float, p
         _last_sheet_error = None
         return
 
+    started = time.time()
     try:
         _worksheet().append_rows(rows, value_input_option="RAW")
         _last_sheet_error = None
         _cached_sheet_sessions.clear()  # so the next read sees this game right away
     except Exception as e:  # noqa: BLE001 - a sheet hiccup must never break the game
         _last_sheet_error = f"Google Sheet sync failed ({type(e).__name__}): {e}"
+    finally:
+        health.record_slow_operation("Sheets append_rows (multiplayer)", time.time() - started)
 
 
 def _sheet_sessions_uncached() -> List[dict]:
@@ -281,14 +306,8 @@ def _solo_worksheet():
     history. Created automatically (with a header row) the first time a
     solo play is recorded, if it doesn't already exist."""
     import gspread
-    from google.oauth2.service_account import Credentials
 
-    scopes = [
-        "https://www.googleapis.com/auth/spreadsheets",
-        "https://www.googleapis.com/auth/drive.file",
-    ]
-    creds = Credentials.from_service_account_info(dict(st.secrets["gcp_service_account"]), scopes=scopes)
-    client = gspread.authorize(creds)
+    client = _authorized_client()
     sheet = client.open_by_key(st.secrets["history_sheet_id"])
     try:
         return sheet.worksheet("Solo Plays")
@@ -328,12 +347,15 @@ def _sync_solo_to_sheet(name: str, category_label: Optional[str], played_at: flo
         _last_solo_sheet_error = None
         return
 
+    started = time.time()
     try:
         _solo_worksheet().append_rows(rows, value_input_option="RAW")
         _last_solo_sheet_error = None
         _cached_sheet_solo_plays.clear()  # so the next read sees this play right away
     except Exception as e:  # noqa: BLE001 - a sheet hiccup must never break the game
         _last_solo_sheet_error = f"Google Sheet sync failed ({type(e).__name__}): {e}"
+    finally:
+        health.record_slow_operation("Sheets append_rows (solo)", time.time() - started)
 
 
 def _sheet_solo_plays_uncached() -> List[dict]:
@@ -530,15 +552,7 @@ def check_sheet_connection() -> str:
     if not _sheet_configured():
         return "Not configured: missing history_sheet_id / gcp_service_account secret(s)."
     try:
-        import gspread
-        from google.oauth2.service_account import Credentials
-
-        scopes = [
-            "https://www.googleapis.com/auth/spreadsheets",
-            "https://www.googleapis.com/auth/drive.file",
-        ]
-        creds = Credentials.from_service_account_info(dict(st.secrets["gcp_service_account"]), scopes=scopes)
-        client = gspread.authorize(creds)
+        client = _authorized_client()
         sheet = client.open_by_key(st.secrets["history_sheet_id"])
         tabs = [ws.title for ws in sheet.worksheets()]
         return f'Connected OK to "{sheet.title}". Tabs: {", ".join(tabs) or "(none)"}.'

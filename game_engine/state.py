@@ -24,7 +24,7 @@ from typing import Dict, List, Optional, Tuple
 
 import streamlit as st
 
-from game_engine import history, stats
+from game_engine import health, history, stats
 
 LOBBY = "lobby"
 QUESTION = "question"
@@ -269,6 +269,15 @@ class GameStore:
                 game.phase = REVEAL
 
     def next_question(self, code: str) -> None:
+        # If this call finishes the game, (code, category_label, players_payload)
+        # for history.record_game_result() ends up here - set inside the lock,
+        # but the call itself happens AFTER the lock is released below. That
+        # matters: record_game_result() syncs to Google Sheets over the
+        # network, and it used to run while still holding self._lock, so a
+        # slow/stuck Sheets response could freeze every game on the app, not
+        # just the one that just finished. Everything that actually needs the
+        # lock (reading/mutating game state) still happens inside it.
+        finish_payload = None
         with self._lock:
             game = self._games.get(code)
             if not game or game.phase != REVEAL:
@@ -292,11 +301,16 @@ class GameStore:
                     players_payload.append(
                         {"name": p.name, "score": p.score, "answers": answers}
                     )
-                history.record_game_result(code, game.category_label, players_payload)
+                finish_payload = (code, game.category_label, players_payload)
             else:
                 game.current_index += 1
                 game.phase = QUESTION
                 game.question_started_at = time.time()
+
+        if finish_payload is not None:
+            started = time.time()
+            history.record_game_result(*finish_payload)
+            health.record_slow_operation("record_game_result", time.time() - started)
 
     def leaderboard(self, code: str) -> List[tuple[str, int]]:
         game = self._games.get(code)
