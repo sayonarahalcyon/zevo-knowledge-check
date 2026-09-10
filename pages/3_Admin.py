@@ -1,11 +1,12 @@
 import datetime
 import json
 import re
+import time
 from collections import defaultdict
 
 import streamlit as st
 
-from game_engine import history
+from game_engine import health, history
 from theme import page, banner
 
 page("Admin", "🛠️")
@@ -313,3 +314,62 @@ if st.button("🔄 Test Google Sheet connection now"):
 error = history.get_last_error()
 if error:
     st.caption(f"⚠️ {error}")
+
+st.divider()
+st.subheader("🩺 App health")
+st.caption(
+    "A background heartbeat that ticks every 10 seconds, independently of any "
+    "single game - so a reported freeze can be checked against real evidence "
+    "instead of only what a player says happened. It can only see the SERVER "
+    "side: a player's own dropped wifi, a sleeping laptop, or a frozen browser "
+    "tab all look identical to \"nothing happened\" from here. It also resets "
+    "on every redeploy/reboot, so it only covers what's happened since the app "
+    "last restarted."
+)
+
+last_beat = health.get_last_heartbeat()
+if last_beat:
+    st.caption(
+        f"Last heartbeat: {_played_str(last_beat)} "
+        f"({int(time.time() - last_beat)}s ago as of this page load)."
+    )
+else:
+    st.caption("No heartbeat recorded yet.")
+
+gaps = health.get_heartbeat_gaps()
+if gaps:
+    st.warning(
+        f"{len(gaps)} gap(s) in the heartbeat since the app last restarted - each "
+        "one is either a real server stall or just the app being asleep with "
+        "nobody around. Check whether a session above was played during the gap "
+        "to tell which."
+    )
+    gap_rows = [
+        {
+            "From": _played_str(g["from"]),
+            "To": _played_str(g["to"]),
+            "Gap (seconds)": g["seconds"],
+        }
+        for g in gaps
+    ]
+    st.dataframe(gap_rows, use_container_width=True, hide_index=True)
+else:
+    st.caption("No heartbeat gaps recorded since the app last restarted.")
+
+slow_ops = health.get_slow_operations()
+if slow_ops:
+    with st.expander(f"⏱️ {len(slow_ops)} slow operation(s) logged"):
+        st.caption(
+            "Operations (mainly Google Sheets writes) that took longer than a "
+            "few seconds - the kind of thing that could freeze other games if "
+            "it happens while a game's lock is held."
+        )
+        slow_rows = [
+            {
+                "When": _played_str(s["at"]),
+                "Operation": s["name"],
+                "Took (seconds)": s["seconds"],
+            }
+            for s in slow_ops
+        ]
+        st.dataframe(slow_rows, use_container_width=True, hide_index=True)
