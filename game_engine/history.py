@@ -476,16 +476,19 @@ def get_all_sessions() -> List[dict]:
     configured, this is exactly the old local-only behaviour.
 
     A session is deduped between the two sources by (code, played_at
-    rounded to the minute) - the Sheet only stores minute-precision
-    timestamps, so that's the finest grain a match can be made at. The
-    local copy (exact timestamp, and never subject to the Sheet's text
-    parsing) wins when a session is in both.
+    floored to the minute) - the Sheet only stores minute-precision
+    timestamps (always :00 seconds), so the local exact timestamp has to
+    be floored the same way rather than rounded, or a local timestamp
+    with seconds >= 30 would round UP into the next minute and no longer
+    match its own Sheet-reconstructed copy, showing up as a duplicate.
+    The local copy (exact timestamp, and never subject to the Sheet's
+    text parsing) wins when a session is in both.
     """
     sheet_sessions = _cached_sheet_sessions()
     local_sessions = _local_sessions()
 
     def _key(s: dict) -> tuple:
-        return (s.get("code"), round(s.get("played_at", 0) / 60.0))
+        return (s.get("code"), int(s.get("played_at", 0) // 60))
 
     merged: Dict[tuple, dict] = {}
     order: List[tuple] = []
@@ -614,14 +617,18 @@ def record_solo_result(name: str, category_label: Optional[str], score: int, ans
 def get_all_solo_plays() -> List[dict]:
     """Every finished solo play, newest first, merged from the local
     tempfile (fast, wiped on redeploy/reboot) and the Google Sheet's "Solo
-    Plays" tab (durable) - same reasoning as get_all_sessions() above.
+    Plays" tab (durable) - same reasoning as get_all_sessions() above,
+    including flooring (not rounding) played_at to the minute when
+    building the dedup key, so a local timestamp with seconds >= 30
+    doesn't round into the next minute and stop matching its own
+    Sheet-reconstructed copy.
     Falls back to local-only when the Sheet isn't configured.
     """
     sheet_plays = _cached_sheet_solo_plays()
     local_plays = _read_solo()
 
     def _key(p: dict) -> tuple:
-        return (p.get("name"), round(p.get("played_at", 0) / 60.0))
+        return (p.get("name"), int(p.get("played_at", 0) // 60))
 
     merged: Dict[tuple, dict] = {}
     order: List[tuple] = []
