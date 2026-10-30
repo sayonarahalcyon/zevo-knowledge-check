@@ -245,6 +245,64 @@ def _render_sidebar_stats() -> None:
             st.json(history.get_debug_info())
 
 
+def render_category_picker(playable, key_prefix: str) -> str:
+    """Category chooser shared by the Host ("pick it myself") and Solo pages.
+
+    `playable` is a bank from questions.add_group_mixes(add_mixed_category(...)).
+    Ungrouped categories (and the Everything mix) are listed directly.
+    Each group (e.g. "October 2026 Update") is ONE entry in that list; picking
+    it reveals a second "Topic" dropdown with the group's random mix first,
+    then its individual categories. Returns the key of the chosen entry in
+    `playable`.
+    """
+
+    def _count(k):
+        return len(playable[k]["questions"])
+
+    def _entry(k):
+        return f'{playable[k]["icon"]} {playable[k]["label"]} ({_count(k)} questions)'
+
+    groups = []
+    for meta in playable.values():
+        g = meta.get("group")
+        if g and g not in groups:
+            groups.append(g)
+
+    top = [("cat", k) for k, m in playable.items() if not m.get("group")]
+    top += [("group", g) for g in groups]
+
+    def _members(g):
+        return [k for k, m in playable.items() if m.get("group") == g and not m.get("group_mix")]
+
+    def _mix_key(g):
+        return next(k for k, m in playable.items() if m.get("group") == g and m.get("group_mix"))
+
+    def _top_label(opt):
+        kind, val = opt
+        if kind == "cat":
+            return _entry(val)
+        subs = _members(val)
+        total = sum(_count(k) for k in subs)
+        return f'{playable[_mix_key(val)]["icon"]} {val} ({len(subs)} topics, {total} questions)'
+
+    kind, val = st.selectbox(
+        "Category", options=top, format_func=_top_label, key=f"{key_prefix}_category"
+    )
+    if kind == "cat":
+        return val
+
+    mix = _mix_key(val)
+
+    def _sub_label(k):
+        if k == mix:
+            return f"🎲 Mix of all {val} topics ({_count(k)} random questions)"
+        return _entry(k)
+
+    return st.selectbox(
+        "Topic", options=[mix] + _members(val), format_func=_sub_label, key=f"{key_prefix}_topic_{mix}"
+    )
+
+
 def banner(icon: str, subtitle: str | None = None) -> None:
     st.markdown(
         f"""
