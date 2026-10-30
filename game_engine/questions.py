@@ -70,7 +70,7 @@ def add_mixed_category(bank: Dict[str, dict], count: int = MIXED_CATEGORY_COUNT)
     got sampled during the run where "Start"/"Create new game" is clicked
     is what that play actually uses.
     """
-    pool = [q for meta in bank.values() if not meta.get("group_mix") for q in meta["questions"]]
+    pool = [q for meta in bank.values() if not meta.get("group_mix") and not meta.get("group_all") for q in meta["questions"]]
     sample_size = min(count, len(pool))
     mixed_questions = random.sample(pool, sample_size) if pool else []
 
@@ -89,12 +89,18 @@ def group_mix_key(group: str) -> str:
     return GROUP_KEY_PREFIX + re.sub(r"[^a-z0-9]+", "_", group.lower()).strip("_")
 
 
+def group_all_key(group: str) -> str:
+    return group_mix_key(group) + ":all"
+
+
 def add_group_mixes(bank: Dict[str, dict], count: int = MIXED_CATEGORY_COUNT) -> Dict[str, dict]:
-    """Returns a new bank with, for every group in `bank`, an extra
-    "random mix of the whole group" entry (`count` questions sampled from
-    all of that group's categories). The group's own categories stay in
-    the bank under their original keys. Entries are flagged
-    "group_mix": True so callers can tell them apart from real categories.
+    """Returns a new bank with, for every group in `bank`, two extra
+    entries: a "random mix of the whole group" (`count` questions sampled
+    from all of that group's categories) and an "all questions" entry
+    (every question in the group, shuffled). The group's own categories stay
+    in the bank under their original keys. The extra entries are flagged
+    "group_mix" / "group_all" so callers can tell them apart from real
+    categories.
 
     Like add_mixed_category(), call this fresh on each page run so the
     sample is re-shuffled whenever the picker is shown.
@@ -102,7 +108,7 @@ def add_group_mixes(bank: Dict[str, dict], count: int = MIXED_CATEGORY_COUNT) ->
     members: Dict[str, List[str]] = {}
     for key, meta in bank.items():
         group = meta.get("group")
-        if group and not meta.get("group_mix"):
+        if group and not meta.get("group_mix") and not meta.get("group_all"):
             members.setdefault(group, []).append(key)
 
     new_bank = dict(bank)
@@ -115,6 +121,14 @@ def add_group_mixes(bank: Dict[str, dict], count: int = MIXED_CATEGORY_COUNT) ->
             "questions": random.sample(pool, min(count, len(pool))),
             "group": group,
             "group_mix": True,
+        }
+        # Every question in the group, shuffled (not just a sample).
+        new_bank[group_all_key(group)] = {
+            "label": f"{group} (all questions)",
+            "icon": icon,
+            "questions": random.sample(pool, len(pool)),
+            "group": group,
+            "group_all": True,
         }
     return new_bank
 
