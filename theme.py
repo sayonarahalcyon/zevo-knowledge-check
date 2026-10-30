@@ -252,7 +252,7 @@ def render_category_picker(playable, key_prefix: str) -> str:
     Ungrouped categories (and the Everything mix) are listed directly.
     Each group (e.g. "October 2026 Update") is ONE entry in that list; picking
     it reveals a second "Topic" dropdown with the group's random mix first,
-    then its individual categories. Returns the key of the chosen entry in
+    then an all-questions entry, then its individual categories. Returns the key of the chosen entry in
     `playable`.
     """
 
@@ -272,10 +272,16 @@ def render_category_picker(playable, key_prefix: str) -> str:
     top += [("group", g) for g in groups]
 
     def _members(g):
-        return [k for k, m in playable.items() if m.get("group") == g and not m.get("group_mix")]
+        return [
+            k for k, m in playable.items()
+            if m.get("group") == g and not m.get("group_mix") and not m.get("group_all")
+        ]
 
     def _mix_key(g):
         return next(k for k, m in playable.items() if m.get("group") == g and m.get("group_mix"))
+
+    def _all_key(g):
+        return next(k for k, m in playable.items() if m.get("group") == g and m.get("group_all"))
 
     def _top_label(opt):
         kind, val = opt
@@ -292,14 +298,20 @@ def render_category_picker(playable, key_prefix: str) -> str:
         return val
 
     mix = _mix_key(val)
+    every = _all_key(val)
 
     def _sub_label(k):
         if k == mix:
             return f"🎲 Mix of all {val} topics ({_count(k)} random questions)"
+        if k == every:
+            return f"📚 All {val} questions ({_count(k)} questions, shuffled)"
         return _entry(k)
 
     return st.selectbox(
-        "Topic", options=[mix] + _members(val), format_func=_sub_label, key=f"{key_prefix}_topic_{mix}"
+        "Topic",
+        options=[mix, every] + _members(val),
+        format_func=_sub_label,
+        key=f"{key_prefix}_topic_{mix}",
     )
 
 
