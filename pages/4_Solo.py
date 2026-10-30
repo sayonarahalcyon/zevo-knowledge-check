@@ -13,9 +13,9 @@ import time
 import streamlit as st
 
 from game_engine import history
-from game_engine.questions import load_category_bank, add_mixed_category
+from game_engine.questions import load_category_bank, add_mixed_category, add_group_mixes
 from game_engine.state import POINTS_PER_CORRECT
-from theme import page, banner, render_category_badge
+from theme import page, banner, render_category_badge, render_category_picker
 
 page("Solo", "🧑‍🎓")
 banner("🧑‍🎓", "Solo practice — play a category on your own, at your own pace")
@@ -29,19 +29,13 @@ if stage == "setup":
         "just you and a category, at your own pace."
     )
     try:
-        bank = add_mixed_category(load_category_bank())
+        bank = add_group_mixes(add_mixed_category(load_category_bank()))
     except Exception as e:
         st.error(f"Couldn't load data/questions.json: {e}")
         st.stop()
 
-    category_keys = list(bank.keys())
-
     name = st.text_input("Your name", value=st.session_state.get("solo_name", ""))
-    choice_key = st.selectbox(
-        "Category",
-        options=category_keys,
-        format_func=lambda k: f'{bank[k]["icon"]} {bank[k]["label"]} ({len(bank[k]["questions"])} questions)',
-    )
+    choice_key = render_category_picker(bank, "solo")
 
     if st.button("Start", type="primary", disabled=not name.strip()):
         st.session_state["solo_name"] = name.strip()

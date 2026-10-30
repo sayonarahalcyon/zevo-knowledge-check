@@ -11,7 +11,7 @@ from game_engine.state import (
     VOTE,
     ROULETTE,
 )
-from game_engine.questions import load_category_bank, add_mixed_category
+from game_engine.questions import load_category_bank, add_mixed_category, add_group_mixes, top_level_bank
 from game_engine.roulette import pick_target, flash_category
 from theme import (
     page,
@@ -21,6 +21,7 @@ from theme import (
     render_category_badge,
     render_roulette_box,
     render_vote_tally,
+    render_category_picker,
 )
 
 page("Host", "🖥️")
@@ -39,10 +40,15 @@ ROULETTE_TICKS = 16  # ~2s of spinning at 130ms/tick before it lands
 if "host_game_code" not in st.session_state:
     st.write("Start a new game to get a join code for the group.")
     try:
-        bank = load_category_bank()
+        raw_bank = load_category_bank()
     except Exception as e:
         st.error(f"Couldn't load data/questions.json: {e}")
         st.stop()
+
+    # Vote and roulette choose from top-level entries only: ungrouped
+    # categories plus one random-mix entry per group. "Pick it myself"
+    # below gets the full two-step picker instead.
+    bank = top_level_bank(raw_bank)
 
     category_keys = list(bank.keys())
 
@@ -60,13 +66,8 @@ if "host_game_code" not in st.session_state:
 
     # ---- pick it myself ----
     if mode == HOST_PICK:
-        pick_bank = add_mixed_category(bank)
-        pick_keys = list(pick_bank.keys())
-        choice_key = st.selectbox(
-            "Category",
-            options=pick_keys,
-            format_func=lambda k: f'{pick_bank[k]["icon"]} {pick_bank[k]["label"]} ({len(pick_bank[k]["questions"])} questions)',
-        )
+        pick_bank = add_group_mixes(add_mixed_category(raw_bank))
+        choice_key = render_category_picker(pick_bank, "host_pick")
         if st.button("Create new game", type="primary"):
             code = store.create_game(HOST_PICK, pick_bank, category_key=choice_key)
             st.session_state["host_game_code"] = code
