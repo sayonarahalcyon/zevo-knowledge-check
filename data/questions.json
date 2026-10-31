@@ -3104,6 +3104,281 @@
           "duration": 20
         }
       ]
+    },
+    {
+      "key": "qa_refresher",
+      "label": "QA Refresher",
+      "icon": "\u2705",
+      "group": "October 2026 Update",
+      "group_icon": "\ud83d\udcc5",
+      "questions": [
+        {
+          "question": "What is the main purpose of QA evaluations?",
+          "options": [
+            "Identify agents with the most tickets",
+            "Ensure fair, consistent evaluations and improve handling",
+            "Find errors in every conversation",
+            "Measure response speed only"
+          ],
+          "correct_index": 1,
+          "duration": 20
+        },
+        {
+          "question": "Why should agents avoid using overly positive expressions when a guest's issue remains unresolved?",
+          "options": [
+            "Positive language is never allowed",
+            "It may give the impression that the issue has already been resolved",
+            "It makes the conversation longer",
+            "It automatically violates ZEVO policy"
+          ],
+          "correct_index": 1,
+          "duration": 20
+        },
+        {
+          "question": "Why is it important to review the complete Intercom conversation before scoring an audit?",
+          "options": [
+            "To check only the latest agent response",
+            "To understand the full context, previous actions, and supporting evidence",
+            "To find as many markdowns as possible",
+            "To focus only on the ticket\u2019s closing message"
+          ],
+          "correct_index": 1,
+          "duration": 20
+        },
+        {
+          "question": "Which criterion carries the highest weight?",
+          "options": [
+            "Communication",
+            "Documentation",
+            "Resolution Quality",
+            "Policy, Process, Risk & Safety"
+          ],
+          "correct_index": 3,
+          "duration": 20
+        },
+        {
+          "question": "A guest has already explained that they made a payment but are still unable to access the vehicle. Which agent response best demonstrates effective acknowledgment?",
+          "options": [
+            "\u201cThank you for contacting ZEVO. How can I help?\u201d",
+            "\u201cI understand you\u2019ve already made a payment, but you\u2019re still unable to access the vehicle. Let me check this for you.\u201d",
+            "\u201cPlease wait while I check your account.\u201d",
+            "\u201cYour concern has been noted.\u201d"
+          ],
+          "correct_index": 1,
+          "duration": 30
+        },
+        {
+          "question": "Which introduction follows the branding standard shown in the refresher?",
+          "options": [
+            "\u201cHi Alex, Jordan here.\u201d",
+            "\u201cHi Alex, this is Jordan from ZEVO Customer Care.\u201d",
+            "\u201cHello, this is ZEVO.\u201d",
+            "\u201cHey Alex, your host contacted us.\u201d"
+          ],
+          "correct_index": 1,
+          "duration": 20
+        },
+        {
+          "question": "When should empathy be included in an acknowledgment?",
+          "options": [
+            "In every response, regardless of context",
+            "Only for hosts",
+            "When appropriate to the actual situation",
+            "Only when issuing a refund"
+          ],
+          "correct_index": 2,
+          "duration": 20
+        },
+        {
+          "question": "A host asks for the exact applicable fee. What is the clearest response?",
+          "options": [
+            "Send only a guide link",
+            "Tell the host to contact someone else",
+            "State the verified fee and share the reference",
+            "Avoid discussing any fee"
+          ],
+          "correct_index": 2,
+          "duration": 20
+        },
+        {
+          "question": "Why should an agent avoid saying \u201cAwesome\u201d before a guest confirms an issue is resolved?",
+          "options": [
+            "It is too informal in all cases",
+            "It assumes an outcome that was not confirmed",
+            "It creates a billing error",
+            "It automatically causes a critical error"
+          ],
+          "correct_index": 1,
+          "duration": 20
+        },
+        {
+          "question": "What is the correct guidance when a guest wants to dispute incorrect Checkr Trust information?",
+          "options": [
+            "ZEVO can override the result",
+            "Ask the host to change it",
+            "Direct the guest to support@checkrtrust.com",
+            "Tell the guest there is no dispute process"
+          ],
+          "correct_index": 2,
+          "duration": 20
+        },
+        {
+          "question": "What should agents verify before completing an extension?",
+          "options": [
+            "Only the guest\u2019s payment promise",
+            "Only the host\u2019s approval",
+            "All applicable approvals and required workflow steps",
+            "Only whether the vehicle is available"
+          ],
+          "correct_index": 2,
+          "duration": 20
+        },
+        {
+          "question": "Which action best supports Resolution Quality when an escalation is still pending?",
+          "options": [
+            "Close the ticket without an update",
+            "Promise an exact resolution time",
+            "Give the guest a clear status and next step",
+            "Repeat the original response"
+          ],
+          "correct_index": 2,
+          "duration": 20
+        },
+        {
+          "question": "What is the main purpose of including relevant Intercom and Slack links in internal notes?",
+          "options": [
+            "To make the note look longer",
+            "To help the next agent locate related conversations and actions",
+            "To replace the need for a clear summary",
+            "To increase the ticket count"
+          ],
+          "correct_index": 1,
+          "duration": 20
+        },
+        {
+          "question": "What should an agent do when unsure about the applicable ZEVO workflow?",
+          "options": [
+            "Make a reasonable guess",
+            "Check the relevant guidance and escalate if needed",
+            "Follow a previous case without checking",
+            "Let the guest decide"
+          ],
+          "correct_index": 1,
+          "duration": 20
+        },
+        {
+          "question": "What is the proper process for disputing a QA score?",
+          "options": [
+            "Immediately request a new auditor",
+            "Discuss with the Team Lead and submit through Streamlit",
+            "Delete the original audit",
+            "Ask another agent to change the score"
+          ],
+          "correct_index": 1,
+          "duration": 20
+        },
+        {
+          "question": "A guest-side introduction is correct, but related host outreach omits the agent introduction and ZEVO Customer Care branding. What Acknowledge Issue score matches the refresher example?",
+          "options": [
+            "Missed \u2014 0/15",
+            "Partial \u2014 10/15",
+            "Full \u2014 15/15"
+          ],
+          "correct_index": 1,
+          "duration": 20
+        },
+        {
+          "question": "An agent documents a guest\u2019s vehicle issue and the host\u2019s response in an internal note but forgets to include the relevant Intercom conversation link. What Documentation score matches the refresher example?",
+          "options": [
+            "Missed \u2014 0/15",
+            "Partial \u2014 10/15",
+            "Full \u2014 15/15"
+          ],
+          "correct_index": 1,
+          "duration": 20
+        },
+        {
+          "question": "An agent explains a guest\u2019s payment breakdown, but the guest remains confused. What is the best next step?",
+          "options": [
+            "End the conversation because the information was already provided",
+            "Continue clarifying the breakdown until the concern is adequately addressed",
+            "Repeat the same explanation without checking understanding"
+          ],
+          "correct_index": 1,
+          "duration": 30
+        },
+        {
+          "question": "An internal note says only \u201cHost was unresponsive\u201d and includes an Intercom link, but omits important repossession guidance and the host\u2019s fee question. What Documentation score matches the refresher example?",
+          "options": [
+            "Missed \u2014 0/15",
+            "Partial \u2014 10/15",
+            "Full \u2014 15/15"
+          ],
+          "correct_index": 1,
+          "duration": 20
+        },
+        {
+          "question": "A guest reports being stranded with a 0% battery. What should take priority?",
+          "options": [
+            "Continue normal billing troubleshooting",
+            "Wait until the next shift",
+            "Assess the urgent safety concern and take appropriate action or escalate promptly"
+          ],
+          "correct_index": 2,
+          "duration": 20
+        },
+        {
+          "question": "An agent contacts the host about an extension, but the internal note includes only the guest conversation link. What is the best documentation practice?",
+          "options": [
+            "Keep the guest link only because the host was contacted separately",
+            "Include both relevant guest and host Intercom links and summarize the key discussion",
+            "Remove the links and document only the outcome"
+          ],
+          "correct_index": 1,
+          "duration": 30
+        },
+        {
+          "question": "A guest requests an extension with an overdue balance of $429.58, and the host has approved it. What additional action aligns with the team visibility reminder?",
+          "options": [
+            "No additional action is needed because the host approved",
+            "Reject the extension automatically because the balance exceeds $200",
+            "Flag the extension request for team visibility while following the approved workflow"
+          ],
+          "correct_index": 2,
+          "duration": 30
+        },
+        {
+          "question": "A guest says they cannot access their vehicle after payment. The agent gives an account update but uses the term \u201crenter.\u201d What is the best communication coaching?",
+          "options": [
+            "Use \u201cguest\u201d consistently and provide a clear, concern-specific update",
+            "Avoid addressing the guest by name",
+            "Use \u201crenter\u201d because it is always the preferred customer-facing term"
+          ],
+          "correct_index": 0,
+          "duration": 30
+        },
+        {
+          "question": "Why is proper ticket assignment important even when the conversation has complete documentation and supporting links?",
+          "options": [
+            "Ticket assignment is optional as long as the notes are complete.",
+            "It ensures clear ownership, accountability, and proper follow-up when needed.",
+            "Any available agent can automatically take responsibility for an unassigned ticket."
+          ],
+          "correct_index": 1,
+          "duration": 30
+        },
+        {
+          "question": "A guest expresses frustration after contacting support multiple times about the same unresolved issue. What is the most appropriate response?",
+          "options": [
+            "Ask the guest to explain everything again without checking history",
+            "Acknowledge the frustration, review previous actions, and provide a meaningful update",
+            "Inform the guest that the previous agent handled the concern",
+            "Close the conversation to avoid duplicate tickets"
+          ],
+          "correct_index": 1,
+          "duration": 30
+        }
+      ]
     }
   ]
 }
